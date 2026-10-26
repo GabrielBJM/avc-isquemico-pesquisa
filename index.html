@@ -1,0 +1,2576 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pesquisa AVC Isquêmico - Pacientes &lt;50 anos</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        :root {
+            --primary: #1a5276;
+            --secondary: #2980b9;
+            --accent: #27ae60;
+            --warning-custom: #f39c12;
+            --danger: #c0392b;
+            --bg: #f4f6f9;
+            --card-bg: #ffffff;
+        }
+        body { background: var(--bg); font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; }
+        .navbar-custom { background: linear-gradient(135deg, var(--primary), var(--secondary)); box-shadow: 0 2px 10px rgba(0,0,0,0.15); }
+        .nav-tabs { border-bottom: 2px solid #dee2e6; }
+        .nav-tabs .nav-link { color: #555; font-weight: 600; border: none; padding: 12px 20px; transition: all 0.2s ease; }
+        .nav-tabs .nav-link.active { color: var(--primary); border-bottom: 3px solid var(--primary); font-weight: 700; background: transparent; }
+        .nav-tabs .nav-link:hover { color: var(--secondary); }
+        .card { border: none; box-shadow: 0 3px 12px rgba(0,0,0,0.06); border-radius: 12px; margin-bottom: 20px; }
+        .card-header { background: var(--primary); color: white; border-radius: 12px 12px 0 0 !important; font-weight: 600; font-size: 1rem; }
+        .section-title { color: var(--primary); font-weight: 700; border-left: 4px solid var(--secondary); padding-left: 12px; margin: 25px 0 15px; font-size: 1.15rem; }
+        .form-label { font-weight: 600; color: #34495e; font-size: 0.88rem; }
+        .btn-primary { background: var(--primary); border-color: var(--primary); }
+        .btn-primary:hover { background: var(--secondary); border-color: var(--secondary); }
+        .btn-success { background: var(--accent); border-color: var(--accent); }
+        .stat-card { text-align: center; padding: 18px 12px; border-radius: 12px; background: white; box-shadow: 0 2px 8px rgba(0,0,0,0.05); border-top: 4px solid var(--secondary); }
+        .stat-card .stat-value { font-size: 1.85rem; font-weight: 700; color: var(--primary); line-height: 1.2; }
+        .stat-card .stat-label { font-size: 0.82rem; color: #7f8c8d; margin-top: 6px; font-weight: 600; }
+        .table-container { overflow-x: auto; }
+        .table thead th { background: var(--primary); color: white; position: sticky; top: 0; font-size: 0.82rem; white-space: nowrap; z-index: 2; }
+        .table tbody td { font-size: 0.82rem; vertical-align: middle; }
+        .risk-badge { display: inline-block; padding: 2px 7px; border-radius: 10px; font-size: 0.72rem; margin: 1px; background: #eaf2f8; color: var(--primary); font-weight: 600; border: 1px solid #d4e6f1; }
+        .analysis-result { background: #fdfefe; border: 1px solid #e1e8ed; border-left: 4px solid var(--secondary); padding: 16px; margin: 12px 0; border-radius: 0 8px 8px 0; }
+        .analysis-result h6 { color: var(--primary); margin-bottom: 12px; font-weight: 700; }
+        .significant { color: var(--accent); font-weight: 700; }
+        .not-significant { color: #888; font-style: italic; }
+        .chart-container { position: relative; height: 340px; margin: 10px 0; }
+        .chart-container-large { position: relative; height: 400px; margin: 10px 0; }
+        .toast-container { position: fixed; top: 20px; right: 20px; z-index: 9999; }
+        .trombolise-fields { display: none; }
+        @media print { .no-print { display: none !important; } .card { break-inside: avoid; } body { background: white; } }
+        .counter-badge { background: var(--accent); color: white; border-radius: 12px; padding: 2px 8px; font-size: 0.75rem; margin-left: 5px; }
+        .help-tip { font-size: 0.75rem; color: #7f8c8d; margin-top: 3px; display: block; }
+        .input-auto { background-color: #f8f9fa; font-weight: 600; color: #2c3e50; }
+        .matricula-feedback { font-size: 0.8rem; font-weight: 600; }
+    </style>
+</head>
+<body>
+
+<nav class="navbar navbar-dark navbar-custom py-3 no-print">
+    <div class="container-fluid">
+        <span class="navbar-brand mb-0 h1 fs-5">
+            <i class="bi bi-heart-pulse-fill me-2 text-danger"></i>
+            Pesquisa AVC Isquêmico em Pacientes &lt;50 anos
+        </span>
+        <span class="text-white-50 small d-none d-md-inline">
+            <i class="bi bi-hospital me-1"></i> Hospital Terciário — Região Norte do Ceará | Estudo Retrospectivo
+        </span>
+    </div>
+</nav>
+
+<div class="container-fluid px-3 px-md-4 mt-3">
+    <ul class="nav nav-tabs no-print" id="mainTabs" role="tablist">
+        <li class="nav-item"><a class="nav-link active" data-bs-toggle="tab" href="#tabCadastro"><i class="bi bi-person-plus-fill me-1"></i>Cadastro</a></li>
+        <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#tabDados"><i class="bi bi-database-fill me-1"></i>Banco de Dados <span id="countBadge" class="counter-badge">0</span></a></li>
+        <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#tabEpidemiologia"><i class="bi bi-bar-chart-fill me-1"></i>Epidemiologia</a></li>
+        <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#tabAnalise"><i class="bi bi-graph-up-arrow me-1"></i>Análise Estatística</a></li>
+        <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#tabExportar"><i class="bi bi-download me-1"></i>Exportar / Importar</a></li>
+    </ul>
+
+    <div class="tab-content mt-3">
+
+        <!-- ==================== TAB CADASTRO ==================== -->
+        <div class="tab-pane fade show active" id="tabCadastro">
+            <form id="formPaciente" novalidate>
+                <input type="hidden" id="editMatriculaOriginal" value="">
+
+                <!-- 1. Dados Demográficos e Internamento -->
+                <h5 class="section-title"><i class="bi bi-person-vcard me-2"></i>Identificação e Período de Internamento</h5>
+                <div class="card"><div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-3">
+                            <label class="form-label">Matrícula do Paciente *</label>
+                            <div class="input-group has-validation">
+                                <span class="input-group-text"><i class="bi bi-hash"></i></span>
+                                <input type="text" class="form-control" id="matricula" required placeholder="Ex: MAT-10293">
+                                <div id="matriculaFeedback" class="invalid-feedback">Matrícula obrigatória e deve ser única.</div>
+                            </div>
+                            <span class="help-tip" id="matriculaHelp">Número de prontuário/matrícula único hospitalar.</span>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Sexo *</label>
+                            <select class="form-select" id="sexo" required>
+                                <option value="">Selecione...</option>
+                                <option value="Masculino">Masculino</option>
+                                <option value="Feminino">Feminino</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">Idade (anos) *</label>
+                            <input type="number" class="form-control" id="idade" min="0" max="49" required placeholder="0–49">
+                            <span class="help-tip">Critério de inclusão: &lt; 50 anos.</span>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">Data da Admissão</label>
+                            <input type="date" class="form-control" id="dataAdmissao">
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">Data da Alta</label>
+                            <input type="date" class="form-control" id="dataAlta">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Dias de Internamento</label>
+                            <div class="input-group">
+                                <input type="number" class="form-control input-auto" id="diasInternamento" min="0" placeholder="Automático" readonly>
+                                <span class="input-group-text">dias</span>
+                            </div>
+                            <span class="help-tip">Calculado pela diferença Alta – Admissão.</span>
+                        </div>
+                    </div>
+                </div></div>
+
+                <!-- 2. Escalas Neurológicas -->
+                <h5 class="section-title"><i class="bi bi-activity me-2"></i>Escalas Neurológicas (Gravidade e Funcionalidade)</h5>
+                <div class="card"><div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label">NIHSS Admissão (0–42) *</label>
+                            <input type="number" class="form-control" id="nihssAdm" min="0" max="42" required placeholder="0 a 42">
+                            <span class="help-tip">0-4 leve | 5-15 moderado | 16-20 mod-grave | 21-42 grave</span>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">NIHSS Alta (0–42)</label>
+                            <input type="number" class="form-control" id="nihssAlta" min="0" max="42" placeholder="0 a 42">
+                            <span class="help-tip">Se óbito no internamento, pode registrar escore final ou deixar em branco.</span>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Variação NIHSS (Δ = Adm – Alta)</label>
+                            <input type="text" class="form-control input-auto" id="deltaNihss" readonly placeholder="Cálculo automático">
+                            <span class="help-tip">Valores positivos indicam melhora do déficit neurológico.</span>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">mRS Prévio (0–6)</label>
+                            <select class="form-select" id="mrsPrevio">
+                                <option value="">Selecione...</option>
+                                <option value="0">0 - Sem sintomas</option>
+                                <option value="1">1 - Sem incapacidade significativa</option>
+                                <option value="2">2 - Incapacidade leve (independente)</option>
+                                <option value="3">3 - Incapacidade moderada (requer ajuda, deambula)</option>
+                                <option value="4">4 - Incapacidade moderadamente grave</option>
+                                <option value="5">5 - Incapacidade grave (acamado, dependente)</option>
+                                <option value="6">6 - Óbito</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">mRS Admissão (0–6)</label>
+                            <select class="form-select" id="mrsAdm">
+                                <option value="">Selecione...</option>
+                                <option value="0">0 - Sem sintomas</option>
+                                <option value="1">1 - Sem incapacidade significativa</option>
+                                <option value="2">2 - Incapacidade leve</option>
+                                <option value="3">3 - Incapacidade moderada</option>
+                                <option value="4">4 - Incapacidade moderadamente grave</option>
+                                <option value="5">5 - Incapacidade grave</option>
+                                <option value="6">6 - Óbito</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">mRS Alta (0–6)</label>
+                            <select class="form-select" id="mrsAlta">
+                                <option value="">Selecione...</option>
+                                <option value="0">0 - Sem sintomas</option>
+                                <option value="1">1 - Sem incapacidade significativa</option>
+                                <option value="2">2 - Incapacidade leve</option>
+                                <option value="3">3 - Incapacidade moderada</option>
+                                <option value="4">4 - Incapacidade moderadamente grave</option>
+                                <option value="5">5 - Incapacidade grave</option>
+                                <option value="6">6 - Óbito</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Variação mRS (Δ = Adm – Alta)</label>
+                            <input type="text" class="form-control input-auto" id="deltaMrs" readonly placeholder="Cálculo automático">
+                            <span class="help-tip">Valores positivos indicam ganho funcional.</span>
+                        </div>
+                    </div>
+                </div></div>
+
+                <!-- 3. Temporalidade -->
+                <h5 class="section-title"><i class="bi bi-clock-history me-2"></i>Intervalos de Tempo de Atendimento</h5>
+                <div class="card"><div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Tempo Sintomas → Procura por Atendimento (minutos)</label>
+                            <div class="input-group">
+                                <input type="number" class="form-control" id="tempoSintomasAtend" min="0" placeholder="Ex: 120">
+                                <span class="input-group-text">min</span>
+                            </div>
+                            <span class="help-tip">Tempo decorrido entre o ictus/último visto bem e a chegada à emergência.</span>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Tempo Admissão → Realização da TC de Crânio (minutos)</label>
+                            <div class="input-group">
+                                <input type="number" class="form-control" id="tempoAdmTC" min="0" placeholder="Ex: 25">
+                                <span class="input-group-text">min</span>
+                            </div>
+                            <span class="help-tip">Tempo porta-tomografia (meta padrão: ≤ 25 min).</span>
+                        </div>
+                    </div>
+                </div></div>
+
+                <!-- 4. Classificação Etiológica e Topográfica -->
+                <h5 class="section-title"><i class="bi bi-diagram-3 me-2"></i>Topografia e Classificações (BAMFORD / TOAST)</h5>
+                <div class="card"><div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label">Território Arterial Acometido *</label>
+                            <select class="form-select" id="territorio" required>
+                                <option value="">Selecione...</option>
+                                <option value="ACM Esquerda">ACM Esquerda</option>
+                                <option value="ACM Direita">ACM Direita</option>
+                                <option value="ACA Esquerda">ACA Esquerda</option>
+                                <option value="ACA Direita">ACA Direita</option>
+                                <option value="ACP Esquerda">ACP Esquerda</option>
+                                <option value="ACP Direita">ACP Direita</option>
+                                <option value="Artéria Basilar">Artéria Basilar</option>
+                                <option value="Artéria Vertebral Esquerda">Artéria Vertebral Esquerda</option>
+                                <option value="Artéria Vertebral Direita">Artéria Vertebral Direita</option>
+                                <option value="Artéria Cerebelar">Artéria Cerebelar</option>
+                                <option value="Múltiplos Territórios">Múltiplos Territórios</option>
+                                <option value="Outro">Outro</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Classificação BAMFORD (OCSP) *</label>
+                            <select class="form-select" id="bamford" required>
+                                <option value="">Selecione...</option>
+                                <option value="TACI">TACI — Infarto Total da Circulação Anterior</option>
+                                <option value="PACI">PACI — Infarto Parcial da Circulação Anterior</option>
+                                <option value="LACI">LACI — Infarto Lacunar</option>
+                                <option value="POCI">POCI — Infarto da Circulação Posterior</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Classificação TOAST *</label>
+                            <select class="form-select" id="toast" required>
+                                <option value="">Selecione...</option>
+                                <option value="Aterosclerose de Grandes Artérias">Aterosclerose de Grandes Artérias</option>
+                                <option value="Cardioembolismo">Cardioembolismo</option>
+                                <option value="Oclusão de Pequenas Artérias">Oclusão de Pequenas Artérias (Lacunar)</option>
+                                <option value="Outra Etiologia Determinada">Outra Etiologia Determinada</option>
+                                <option value="Etiologia Indeterminada">Etiologia Indeterminada</option>
+                            </select>
+                            <span class="help-tip">Fundamental para análise estratificada da resposta à trombólise.</span>
+                        </div>
+                    </div>
+                </div></div>
+
+                <!-- 5. Fatores de Risco -->
+                <h5 class="section-title"><i class="bi bi-shield-exclamation me-2"></i>Fatores de Risco e Comorbidades</h5>
+                <div class="card"><div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-3"><div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="frHAS">
+                            <label class="form-check-label" for="frHAS">Hipertensão Arterial (HAS)</label>
+                        </div></div>
+                        <div class="col-md-3"><div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="frDM2">
+                            <label class="form-check-label" for="frDM2">Diabetes Mellitus tipo 2</label>
+                        </div></div>
+                        <div class="col-md-3"><div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="frDislipidemia">
+                            <label class="form-check-label" for="frDislipidemia">Dislipidemia</label>
+                        </div></div>
+                        <div class="col-md-3"><div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="frTabagismo">
+                            <label class="form-check-label" for="frTabagismo">Tabagismo</label>
+                        </div></div>
+                        <div class="col-md-3"><div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="frEtilismo">
+                            <label class="form-check-label fw-bold text-primary" for="frEtilismo"><i class="bi bi-cup-straw me-1"></i>Etilismo</label>
+                        </div></div>
+                        <div class="col-md-3"><div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="frObesidade">
+                            <label class="form-check-label" for="frObesidade">Obesidade</label>
+                        </div></div>
+                        <div class="col-md-3"><div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="frCardiopatia">
+                            <label class="form-check-label" for="frCardiopatia">Cardiopatia</label>
+                        </div></div>
+                        <div class="col-md-3"><div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="frAVCPrevio">
+                            <label class="form-check-label" for="frAVCPrevio">AVC Prévio</label>
+                        </div></div>
+                        <div class="col-md-3"><div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="frAnticoagulante">
+                            <label class="form-check-label" for="frAnticoagulante">Uso de Anticoag / Antiagregante</label>
+                        </div></div>
+                        <div class="col-md-3"><div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="frAnticoncepcional">
+                            <label class="form-check-label" for="frAnticoncepcional">Uso de Anticoncepcionais</label>
+                        </div></div>
+                    </div>
+                </div></div>
+
+                <!-- 6. Trombólise e Complicações Hemorrágicas -->
+                <h5 class="section-title"><i class="bi bi-eyedropper me-2"></i>Terapia Trombolítica e Complicações</h5>
+                <div class="card"><div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-3">
+                            <label class="form-label">Realização de Trombólise *</label>
+                            <select class="form-select" id="trombolise" required>
+                                <option value="">Selecione...</option>
+                                <option value="Sim">Sim</option>
+                                <option value="Não">Não</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3 trombolise-fields">
+                            <label class="form-label">Delta T (em horas) *</label>
+                            <div class="input-group">
+                                <input type="number" step="0.1" class="form-control" id="deltaT" min="0" placeholder="Ex: 2.5">
+                                <span class="input-group-text">horas</span>
+                            </div>
+                            <span class="help-tip">Tempo decorrido entre o ictus e a infusão (janela terapêutica).</span>
+                        </div>
+                        <div class="col-md-3 trombolise-fields">
+                            <label class="form-label">Tempo Porta-Agulha (minutos) *</label>
+                            <div class="input-group">
+                                <input type="number" class="form-control" id="portaAgulha" min="0" placeholder="Ex: 45">
+                                <span class="input-group-text">min</span>
+                            </div>
+                            <span class="help-tip">Tempo entre chegada e início da trombólise (&le; 60 min).</span>
+                        </div>
+                        <div class="col-md-3 trombolise-fields">
+                            <label class="form-label">Transformação Hemorrágica (TH) *</label>
+                            <select class="form-select" id="transfHemorragica">
+                                <option value="Não">Não</option>
+                                <option value="Sim">Sim</option>
+                            </select>
+                            <span class="help-tip">Qualquer sangramento detectado em neuroimagem de controle.</span>
+                        </div>
+                        <div class="col-md-3 trombolise-fields" id="divTHSintomatica">
+                            <label class="form-label">TH Sintomática (sICH) *</label>
+                            <select class="form-select" id="transfHemorragicaSintomatica">
+                                <option value="Não">Não</option>
+                                <option value="Sim">Sim</option>
+                            </select>
+                            <span class="help-tip">Piora neurológica (&ge; 4 pts NIHSS) atribuída à hemorragia.</span>
+                        </div>
+                    </div>
+                </div></div>
+
+                <!-- 7. Desfecho Clínico -->
+                <h5 class="section-title"><i class="bi bi-flag-fill me-2"></i>Desfecho Hospitalar</h5>
+                <div class="card"><div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-3">
+                            <label class="form-label">Óbito Hospitalar *</label>
+                            <select class="form-select" id="obito" required>
+                                <option value="">Selecione...</option>
+                                <option value="Sim">Sim</option>
+                                <option value="Não">Não</option>
+                            </select>
+                        </div>
+                    </div>
+                </div></div>
+
+                <div class="d-flex gap-2 mb-4 mt-3">
+                    <button type="submit" class="btn btn-primary btn-lg px-4" id="btnSalvar"><i class="bi bi-save me-2"></i>Salvar Paciente</button>
+                    <button type="button" class="btn btn-outline-secondary btn-lg" id="btnLimpar"><i class="bi bi-eraser me-2"></i>Limpar Formulário</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- ==================== TAB BANCO DE DADOS ==================== -->
+        <div class="tab-pane fade" id="tabDados">
+            <div class="card">
+                <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
+                    <span><i class="bi bi-database me-2"></i>Banco de Dados — Registros de Pacientes (&lt;50 anos)</span>
+                    <div class="d-flex gap-2">
+                        <input type="text" class="form-control form-control-sm" style="width: 260px;" id="searchInput" placeholder="Buscar por matrícula, TOAST, etc...">
+                        <button class="btn btn-sm btn-outline-danger text-nowrap" id="btnDeleteAll" title="Apagar todos"><i class="bi bi-trash"></i> Apagar Todos</button>
+                    </div>
+                </div>
+                <div class="card-body table-container p-0" style="max-height: 72vh; overflow-y: auto;">
+                    <table class="table table-hover table-sm table-striped mb-0" id="tabelaDados">
+                        <thead>
+                            <tr>
+                                <th>Matrícula</th>
+                                <th>Sexo</th>
+                                <th>Idade</th>
+                                <th>Intern. (dias)</th>
+                                <th>NIHSS Adm</th>
+                                <th>NIHSS Alta</th>
+                                <th>Δ NIHSS</th>
+                                <th>mRS Prév</th>
+                                <th>mRS Adm</th>
+                                <th>mRS Alta</th>
+                                <th>Δ mRS</th>
+                                <th>TOAST</th>
+                                <th>BAMFORD</th>
+                                <th>Território</th>
+                                <th>Fatores Risco</th>
+                                <th>Trombólise</th>
+                                <th>TH / THS</th>
+                                <th>Óbito</th>
+                                <th class="no-print">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabelaBody"></tbody>
+                    </table>
+                    <div id="semDados" class="text-center text-muted py-5" style="display:none;">
+                        <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+                        Nenhum paciente cadastrado até o momento. Utilize a aba <strong>Cadastro</strong> para registrar dados.
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== TAB EPIDEMIOLOGIA ==================== -->
+        <div class="tab-pane fade" id="tabEpidemiologia">
+            <div class="row g-3 mb-4" id="statCards"></div>
+
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <div class="card h-100"><div class="card-header"><i class="bi bi-gender-ambiguous me-2"></i>Distribuição por Sexo</div>
+                    <div class="card-body"><div class="chart-container"><canvas id="chartSexo"></canvas></div></div></div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card h-100"><div class="card-header"><i class="bi bi-bar-chart-steps me-2"></i>Faixa Etária (&lt;50 anos)</div>
+                    <div class="card-body"><div class="chart-container"><canvas id="chartIdade"></canvas></div></div></div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card h-100"><div class="card-header"><i class="bi bi-calendar-range me-2"></i>Dias de Internamento (Distribuição)</div>
+                    <div class="card-body"><div class="chart-container"><canvas id="chartDiasInternamento"></canvas></div></div></div>
+                </div>
+
+                <div class="col-md-6">
+                    <div class="card h-100"><div class="card-header"><i class="bi bi-pie-chart me-2"></i>Classificação BAMFORD (OCSP)</div>
+                    <div class="card-body"><div class="chart-container"><canvas id="chartBamford"></canvas></div></div></div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card h-100"><div class="card-header"><i class="bi bi-diagram-3-fill me-2"></i>Classificação TOAST (Subtipos Etiológicos)</div>
+                    <div class="card-body"><div class="chart-container"><canvas id="chartToast"></canvas></div></div></div>
+                </div>
+
+                <div class="col-md-6">
+                    <div class="card h-100"><div class="card-header"><i class="bi bi-geo-alt-fill me-2"></i>Território Arterial Acometido</div>
+                    <div class="card-body"><div class="chart-container"><canvas id="chartTerritorio"></canvas></div></div></div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card h-100"><div class="card-header"><i class="bi bi-heart-pulse me-2"></i>Prevalência de Fatores de Risco (incl. Etilismo)</div>
+                    <div class="card-body"><div class="chart-container"><canvas id="chartFatoresRisco"></canvas></div></div></div>
+                </div>
+
+                <div class="col-md-6">
+                    <div class="card h-100"><div class="card-header"><i class="bi bi-thermometer-half me-2"></i>Gravidade Admissional (NIHSS)</div>
+                    <div class="card-body"><div class="chart-container"><canvas id="chartNIHSS"></canvas></div></div></div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card h-100"><div class="card-header"><i class="bi bi-shield-check me-2"></i>Trombólise, Transformação Hemorrágica e Óbito</div>
+                    <div class="card-body"><div class="chart-container"><canvas id="chartTrombolise"></canvas></div></div></div>
+                </div>
+
+                <!-- EPIDEMIOLOGIA ESTRATIFICADA: Variação mRS por Trombólise e TOAST -->
+                <div class="col-12">
+                    <div class="card border-primary">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <span><i class="bi bi-bar-chart-line-fill me-2"></i>Variação de mRS: Trombólise vs Sem Trombólise Estratificada pelo TOAST</span>
+                            <span class="badge bg-light text-dark">Subanálise Epidemiológica</span>
+                        </div>
+                        <div class="card-body">
+                            <p class="text-muted small">
+                                Comparação do ganho funcional (&Delta; mRS = mRS Admissão &minus; mRS Alta) entre pacientes submetidos ou não à trombólise, subdivididos por cada subtipo etiológico TOAST. Valores maiores indicam maior recuperação de funcionalidade.
+                            </p>
+                            <div class="chart-container-large"><canvas id="chartToastMRSTrombo"></canvas></div>
+                            <div class="table-container mt-4" id="tabelaToastMRSEpidemio"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tabela descritiva de variáveis contínuas -->
+                <div class="col-12">
+                    <div class="card"><div class="card-header"><i class="bi bi-table me-2"></i>Estatística Descritiva — Variáveis Contínuas do Estudo</div>
+                    <div class="card-body table-container p-0" id="tabelaDescritiva"></div></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== TAB ANÁLISE ESTATÍSTICA ==================== -->
+        <div class="tab-pane fade" id="tabAnalise">
+            <div class="alert alert-info no-print d-flex align-items-center">
+                <i class="bi bi-info-circle-fill fs-4 me-3"></i>
+                <div>
+                    <strong>Cálculos Estatísticos Automatizados:</strong> As correlações, regressões lineares, regressões logísticas e testes de hipóteses (teste <em>t</em> de Welch e Mann-Whitney U) são recalculados em tempo real a cada paciente inserido.
+                </div>
+            </div>
+
+            <div class="row g-3">
+                <!-- 1. Regressão Linear: Idade vs NIHSS Admissão -->
+                <div class="col-md-6">
+                    <div class="card h-100"><div class="card-header">1. Regressão Linear: Idade vs NIHSS Admissão</div>
+                    <div class="card-body">
+                        <div class="chart-container"><canvas id="chartRegIdadeNIHSS"></canvas></div>
+                        <div id="resultRegIdadeNIHSS" class="analysis-result"></div>
+                    </div></div>
+                </div>
+
+                <!-- 2. NOVO: Regressão Linear e Logística: Dias de Internamento vs NIHSS Admissão -->
+                <div class="col-md-6">
+                    <div class="card h-100"><div class="card-header">2. Associação: Dias de Internamento vs NIHSS Admissão</div>
+                    <div class="card-body">
+                        <div class="chart-container"><canvas id="chartRegInternNIHSS"></canvas></div>
+                        <div id="resultRegInternNIHSS" class="analysis-result"></div>
+                    </div></div>
+                </div>
+
+                <!-- 3. Variação NIHSS vs Trombólise -->
+                <div class="col-md-6">
+                    <div class="card h-100"><div class="card-header">3. Variação do NIHSS (&Delta; = Adm &minus; Alta) vs Trombólise</div>
+                    <div class="card-body">
+                        <div class="chart-container"><canvas id="chartNIHSSTrombo"></canvas></div>
+                        <div id="resultNIHSSTrombo" class="analysis-result"></div>
+                    </div></div>
+                </div>
+
+                <!-- 4. Fatores de Risco vs NIHSS Admissão -->
+                <div class="col-md-6">
+                    <div class="card h-100"><div class="card-header">4. Fatores de Risco vs NIHSS Admissão (incluindo Etilismo)</div>
+                    <div class="card-body">
+                        <div class="chart-container"><canvas id="chartFRvsNIHSS"></canvas></div>
+                        <div id="resultFRvsNIHSS" class="analysis-result"></div>
+                    </div></div>
+                </div>
+
+                <!-- 5. Variação mRS vs Fatores de Risco -->
+                <div class="col-md-6">
+                    <div class="card h-100"><div class="card-header">5. Variação mRS (&Delta; = Adm &minus; Alta) vs Fatores de Risco</div>
+                    <div class="card-body">
+                        <div class="chart-container"><canvas id="chartMRSvsFR"></canvas></div>
+                        <div id="resultMRSvsFR" class="analysis-result"></div>
+                    </div></div>
+                </div>
+
+                <!-- 6. Variação mRS vs Trombólise (Global) -->
+                <div class="col-md-6">
+                    <div class="card h-100"><div class="card-header">6. Variação mRS Global: Com vs Sem Trombólise</div>
+                    <div class="card-body">
+                        <div class="chart-container"><canvas id="chartMRSTrombo"></canvas></div>
+                        <div id="resultMRSTrombo" class="analysis-result"></div>
+                    </div></div>
+                </div>
+
+                <!-- 7. NOVO: Análise Estatística Estratificada: Δ mRS vs Trombólise dentro de cada grupo TOAST -->
+                <div class="col-12">
+                    <div class="card"><div class="card-header">7. Análise Estatística Estratificada: Recuperação Funcional (&Delta; mRS) por Trombólise em cada Subgrupo TOAST</div>
+                    <div class="card-body">
+                        <div id="resultToastEstratificado" class="analysis-result"></div>
+                    </div></div>
+                </div>
+
+                <!-- 8. Regressão Logística Multivariada: Preditores de Óbito -->
+                <div class="col-12">
+                    <div class="card"><div class="card-header">8. Regressão Logística: Modelagem Preditiva de Mortalidade Hospitalar</div>
+                    <div class="card-body">
+                        <div id="resultLogisticaObito" class="analysis-result"></div>
+                    </div></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== TAB EXPORTAR/IMPORTAR ==================== -->
+        <div class="tab-pane fade" id="tabExportar">
+            <div class="row g-4">
+                <div class="col-md-6">
+                    <div class="card h-100">
+                        <div class="card-header"><i class="bi bi-file-earmark-arrow-down me-2"></i>Exportar Base de Dados</div>
+                        <div class="card-body">
+                            <p class="text-muted">Faça o download dos dados para análise avançada no SPSS, R, Stata, Jamovi ou Excel.</p>
+                            <div class="d-grid gap-2">
+                                <button class="btn btn-primary btn-lg" id="btnExportCSV"><i class="bi bi-filetype-csv me-2"></i>Exportar Planilha CSV (UTF-8 Excel)</button>
+                                <button class="btn btn-outline-primary" id="btnExportJSON"><i class="bi bi-filetype-json me-2"></i>Exportar Backup Completo (JSON)</button>
+                                <button class="btn btn-outline-secondary" id="btnPrint"><i class="bi bi-printer me-2"></i>Imprimir Relatório de Resultados</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card h-100">
+                        <div class="card-header"><i class="bi bi-file-earmark-arrow-up me-2"></i>Importar / Restaurar Banco de Dados</div>
+                        <div class="card-body">
+                            <p class="text-muted">Carregue um arquivo JSON de backup previamente gerado por esta ferramenta.</p>
+                            <div class="mb-3">
+                                <input type="file" class="form-control" id="importFile" accept=".json">
+                            </div>
+                            <button class="btn btn-success" id="btnImport"><i class="bi bi-upload me-2"></i>Importar Arquivo JSON</button>
+                            <div class="alert alert-warning mt-3 mb-0 small">
+                                <i class="bi bi-exclamation-triangle-fill me-1"></i>
+                                <strong>Atenção:</strong> A importação substitui os dados em memória/navegador. Recomenda-se exportar um backup antes de importar um novo arquivo.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div><!-- /tab-content -->
+</div><!-- /container -->
+
+<!-- Toast de Notificação -->
+<div class="toast-container">
+    <div id="toastNotif" class="toast align-items-center text-white border-0" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="d-flex">
+            <div class="toast-body d-flex align-items-center fs-6" id="toastContent">
+                <i class="bi me-2 fs-5" id="toastIcon"></i>
+                <div>
+                    <strong id="toastTitle" class="d-block">Notificação</strong>
+                    <span id="toastMsg">Mensagem</span>
+                </div>
+            </div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+// ================================================================
+// GERENCIADOR DE DADOS (STORAGE LOCAL)
+// ================================================================
+const DB_KEY = 'avc_pesquisa_dados_v2';
+const DB_KEY_OLD = 'avc_pesquisa_dados';
+
+const DataManager = {
+    getAll() {
+        try {
+            let raw = localStorage.getItem(DB_KEY);
+            if (!raw) {
+                // Tenta migrar dados legados se existirem
+                const oldRaw = localStorage.getItem(DB_KEY_OLD);
+                if (oldRaw) {
+                    const oldData = JSON.parse(oldRaw);
+                    const migrated = oldData.map(p => this.normalizePatient(p));
+                    this.save(migrated);
+                    return migrated;
+                }
+                return [];
+            }
+            const data = JSON.parse(raw);
+            return Array.isArray(data) ? data.map(p => this.normalizePatient(p)) : [];
+        } catch (e) {
+            console.error('Erro ao ler DB:', e);
+            return [];
+        }
+    },
+
+    normalizePatient(p) {
+        // Assegura campos atualizados e retrocompatibilidade com cadastros antigos
+        const matricula = (p.matricula || p.pacienteId || '').toString().trim();
+        let diasIntern = p.diasInternamento;
+        if ((diasIntern === undefined || diasIntern === null) && p.dataAdmissao && p.dataAlta) {
+            const dtAdm = new Date(p.dataAdmissao);
+            const dtAlta = new Date(p.dataAlta);
+            const diff = Math.round((dtAlta - dtAdm) / (1000 * 60 * 60 * 24));
+            diasIntern = diff >= 0 ? diff : null;
+        }
+
+        return {
+            matricula: matricula,
+            sexo: p.sexo || '',
+            idade: Number(p.idade),
+            dataAdmissao: p.dataAdmissao || '',
+            dataAlta: p.dataAlta || '',
+            diasInternamento: diasIntern !== null && diasIntern !== undefined && !isNaN(diasIntern) ? Number(diasIntern) : null,
+            nihssAdm: p.nihssAdm !== null && !isNaN(p.nihssAdm) ? Number(p.nihssAdm) : null,
+            nihssAlta: p.nihssAlta !== null && p.nihssAlta !== '' && !isNaN(p.nihssAlta) ? Number(p.nihssAlta) : null,
+            deltaNihss: (p.nihssAdm !== null && p.nihssAlta !== null && !isNaN(p.nihssAdm) && !isNaN(p.nihssAlta)) ? (Number(p.nihssAdm) - Number(p.nihssAlta)) : null,
+            mrsPrevio: p.mrsPrevio !== null && p.mrsPrevio !== '' && !isNaN(p.mrsPrevio) ? Number(p.mrsPrevio) : null,
+            mrsAdm: p.mrsAdm !== null && p.mrsAdm !== '' && !isNaN(p.mrsAdm) ? Number(p.mrsAdm) : null,
+            mrsAlta: p.mrsAlta !== null && p.mrsAlta !== '' && !isNaN(p.mrsAlta) ? Number(p.mrsAlta) : null,
+            deltaMrs: (p.mrsAdm !== null && p.mrsAlta !== null && !isNaN(p.mrsAdm) && !isNaN(p.mrsAlta)) ? (Number(p.mrsAdm) - Number(p.mrsAlta)) : null,
+            tempoSintomasAtend: p.tempoSintomasAtend !== null && !isNaN(p.tempoSintomasAtend) ? Number(p.tempoSintomasAtend) : null,
+            tempoAdmTC: p.tempoAdmTC !== null && !isNaN(p.tempoAdmTC) ? Number(p.tempoAdmTC) : null,
+            territorio: p.territorio || '',
+            bamford: p.bamford || '',
+            toast: p.toast || '',
+            fatoresRisco: Array.isArray(p.fatoresRisco) ? p.fatoresRisco : [],
+            trombolise: p.trombolise || 'Não',
+            deltaT: p.deltaT !== null && p.deltaT !== '' && !isNaN(p.deltaT) ? Number(p.deltaT) : null,
+            portaAgulha: p.portaAgulha !== null && p.portaAgulha !== '' && !isNaN(p.portaAgulha) ? Number(p.portaAgulha) : null,
+            transfHemorragica: p.transfHemorragica || 'Não',
+            transfHemorragicaSintomatica: p.transfHemorragicaSintomatica || 'Não',
+            obito: p.obito || 'Não',
+            dataCadastro: p.dataCadastro || new Date().toISOString()
+        };
+    },
+
+    save(data) {
+        localStorage.setItem(DB_KEY, JSON.stringify(data));
+        this.updateCount();
+    },
+
+    add(patient) {
+        const data = this.getAll();
+        data.push(this.normalizePatient(patient));
+        this.save(data);
+    },
+
+    update(matriculaOriginal, patient) {
+        let data = this.getAll();
+        const idx = data.findIndex(p => p.matricula.toLowerCase() === matriculaOriginal.toLowerCase());
+        if (idx !== -1) {
+            data[idx] = this.normalizePatient(patient);
+            this.save(data);
+        }
+    },
+
+    remove(matricula) {
+        let data = this.getAll().filter(p => p.matricula.toLowerCase() !== matricula.toLowerCase());
+        this.save(data);
+    },
+
+    matriculaExists(matricula, ignoreMatricula = null) {
+        const data = this.getAll();
+        const mat = (matricula || '').toString().trim().toLowerCase();
+        if (!mat) return false;
+        return data.some(p => {
+            if (ignoreMatricula && p.matricula.toLowerCase() === ignoreMatricula.toLowerCase()) {
+                return false;
+            }
+            return p.matricula.toLowerCase() === mat;
+        });
+    },
+
+    clear() {
+        this.save([]);
+    },
+
+    updateCount() {
+        const count = this.getAll().length;
+        const el = document.getElementById('countBadge');
+        if (el) el.textContent = count;
+    }
+};
+
+// ================================================================
+// MÓDULO MATEMÁTICO E ESTATÍSTICO ROBUSTO
+// ================================================================
+const Stats = {
+    mean(arr) {
+        if (!arr || !arr.length) return 0;
+        return arr.reduce((a, b) => a + b, 0) / arr.length;
+    },
+    median(arr) {
+        if (!arr || !arr.length) return 0;
+        const s = [...arr].sort((a, b) => a - b);
+        const mid = Math.floor(s.length / 2);
+        return s.length % 2 ? s[mid] : (s[mid - 1] + s[mid]) / 2;
+    },
+    std(arr) {
+        if (!arr || arr.length < 2) return 0;
+        const m = this.mean(arr);
+        return Math.sqrt(arr.reduce((sum, v) => sum + (v - m) ** 2, 0) / (arr.length - 1));
+    },
+    min(arr) { return (!arr || !arr.length) ? 0 : Math.min(...arr); },
+    max(arr) { return (!arr || !arr.length) ? 0 : Math.max(...arr); },
+    iqr(arr) {
+        if (!arr || arr.length < 4) return { q1: 0, q3: 0, iqr: 0 };
+        const s = [...arr].sort((a, b) => a - b);
+        const q1 = this.median(s.slice(0, Math.floor(s.length / 2)));
+        const q3 = this.median(s.slice(Math.ceil(s.length / 2)));
+        return { q1, q3, iqr: q3 - q1 };
+    },
+
+    // Regressão Linear Simples
+    linearRegression(x, y) {
+        const n = x.length;
+        if (n < 3) return null;
+        const mx = this.mean(x), my = this.mean(y);
+        let ssxy = 0, ssxx = 0, ssyy = 0;
+        for (let i = 0; i < n; i++) {
+            ssxy += (x[i] - mx) * (y[i] - my);
+            ssxx += (x[i] - mx) ** 2;
+            ssyy += (y[i] - my) ** 2;
+        }
+        if (ssxx === 0) return null;
+        const slope = ssxy / ssxx;
+        const intercept = my - slope * mx;
+        const r2 = ssyy === 0 ? 0 : Math.min(1, Math.max(0, (ssxy ** 2) / (ssxx * ssyy)));
+        const r = Math.sqrt(r2) * (ssxy >= 0 ? 1 : -1);
+
+        const yPred = x.map(xi => slope * xi + intercept);
+        const ssRes = y.reduce((s, yi, i) => s + (yi - yPred[i]) ** 2, 0);
+        const se = n > 2 ? Math.sqrt(ssRes / (n - 2) / ssxx) : Infinity;
+        const tStat = (se > 0 && isFinite(se)) ? Math.abs(slope / se) : 0;
+        const df = Math.max(1, n - 2);
+        const pValue = this.tDistPValue(tStat, df);
+
+        return { slope, intercept, r, r2, tStat, df, pValue, n, se };
+    },
+
+    // p-valor bicaudal aproximado da distribuição t de Student
+    tDistPValue(t, df) {
+        if (df <= 0) return 1;
+        const x = df / (df + t * t);
+        let p = this.incompleteBeta(df / 2, 0.5, x);
+        return isNaN(p) ? 1 : Math.min(Math.max(p, 0), 1);
+    },
+
+    incompleteBeta(a, b, x) {
+        if (x <= 0) return 0;
+        if (x >= 1) return 1;
+        const maxIter = 200;
+        const eps = 1e-10;
+        const lnBeta = this.lnGamma(a) + this.lnGamma(b) - this.lnGamma(a + b);
+        const front = Math.exp(Math.log(x) * a + Math.log(1 - x) * b - lnBeta) / a;
+        let f = 1, c = 1, d = 0;
+        for (let i = 0; i <= maxIter; i++) {
+            let m = Math.floor(i / 2);
+            let numerator;
+            if (i === 0) { numerator = 1; }
+            else if (i % 2 === 0) {
+                numerator = (m * (b - m) * x) / ((a + 2 * m - 1) * (a + 2 * m));
+            } else {
+                numerator = -((a + m) * (a + b + m) * x) / ((a + 2 * m) * (a + 2 * m + 1));
+            }
+            d = 1 + numerator * d;
+            if (Math.abs(d) < eps) d = eps;
+            d = 1 / d;
+            c = 1 + numerator / c;
+            if (Math.abs(c) < eps) c = eps;
+            f *= c * d;
+            if (Math.abs(c * d - 1) < eps) break;
+        }
+        return front * (f - 1);
+    },
+
+    lnGamma(z) {
+        const c = [76.18009172947146, -86.50532032941677, 24.01409824083091,
+            -1.231739572450155, 0.1208650973866179e-2, -0.5395239384953e-5];
+        let x = z, y = z;
+        let tmp = x + 5.5;
+        tmp -= (x + 0.5) * Math.log(tmp);
+        let ser = 1.000000000190015;
+        for (let j = 0; j < 6; j++) ser += c[j] / ++y;
+        return -tmp + Math.log(2.5066282746310005 * ser / x);
+    },
+
+    // Teste t para amostras independentes (Welch)
+    tTestIndependent(group1, group2) {
+        const n1 = group1.length, n2 = group2.length;
+        if (n1 < 2 || n2 < 2) return null;
+        const m1 = this.mean(group1), m2 = this.mean(group2);
+        const v1 = this.std(group1) ** 2, v2 = this.std(group2) ** 2;
+        const se = Math.sqrt(v1 / n1 + v2 / n2);
+        if (se === 0) {
+            return { tStat: 0, df: n1 + n2 - 2, pValue: 1, meanDiff: 0, m1, m2, n1, n2, sd1: Math.sqrt(v1), sd2: Math.sqrt(v2) };
+        }
+        const tStat = (m1 - m2) / se;
+        const denomDf = (v1 / n1) ** 2 / (n1 - 1) + (v2 / n2) ** 2 / (n2 - 1);
+        const df = denomDf > 0 ? ((v1 / n1 + v2 / n2) ** 2) / denomDf : (n1 + n2 - 2);
+        const pValue = this.tDistPValue(Math.abs(tStat), Math.max(1, Math.round(df)));
+        return { tStat, df: Math.round(df), pValue, meanDiff: m1 - m2, m1, m2, n1, n2, sd1: Math.sqrt(v1), sd2: Math.sqrt(v2) };
+    },
+
+    // Teste de Mann-Whitney U (não paramétrico)
+    mannWhitneyU(group1, group2) {
+        const n1 = group1.length, n2 = group2.length;
+        if (n1 < 2 || n2 < 2) return null;
+        const combined = [
+            ...group1.map(v => ({ v, g: 1 })),
+            ...group2.map(v => ({ v, g: 2 }))
+        ].sort((a, b) => a.v - b.v);
+
+        let i = 0;
+        while (i < combined.length) {
+            let j = i;
+            while (j < combined.length && combined[j].v === combined[i].v) j++;
+            const avgRank = (i + 1 + j) / 2;
+            for (let k = i; k < j; k++) combined[k].rank = avgRank;
+            i = j;
+        }
+
+        const R1 = combined.filter(c => c.g === 1).reduce((s, c) => s + c.rank, 0);
+        const U1 = R1 - n1 * (n1 + 1) / 2;
+        const U2 = n1 * n2 - U1;
+        const U = Math.min(U1, U2);
+        const mU = n1 * n2 / 2;
+        const sigmaU = Math.sqrt(n1 * n2 * (n1 + n2 + 1) / 12);
+        const z = sigmaU > 0 ? (U - mU) / sigmaU : 0;
+        const pValue = 2 * (1 - this.normalCDF(Math.abs(z)));
+        return { U, z, pValue, n1, n2 };
+    },
+
+    normalCDF(x) {
+        const a1 = 0.254829592, a2 = -0.284496736, a3 = 1.421413741;
+        const a4 = -1.453152027, a5 = 1.061405429, p = 0.3275911;
+        const sign = x < 0 ? -1 : 1;
+        const absX = Math.abs(x) / Math.sqrt(2);
+        const t = 1 / (1 + p * absX);
+        const y = 1 - (((((a5 * t + a4) * t) + a3) * t + a2) * t + a1) * t * Math.exp(-absX * absX);
+        return 0.5 * (1 + sign * y);
+    },
+
+    // Regressão Logística com Gradiente Descendente e Penalização L2 suave
+    logisticRegression(X, y, maxIter = 1500, lr = 0.05) {
+        const n = X.length;
+        if (n < 6) return null;
+        const k = X[0].length;
+        let beta = new Array(k + 1).fill(0);
+
+        const sigmoid = z => 1 / (1 + Math.exp(-Math.max(-30, Math.min(30, z))));
+
+        for (let iter = 0; iter < maxIter; iter++) {
+            const grad = new Array(k + 1).fill(0);
+            for (let i = 0; i < n; i++) {
+                let z = beta[0];
+                for (let j = 0; j < k; j++) z += beta[j + 1] * X[i][j];
+                const p = sigmoid(z);
+                const err = y[i] - p;
+                grad[0] += err;
+                for (let j = 0; j < k; j++) grad[j + 1] += err * X[i][j];
+            }
+            // Atualiza com penalização suave para evitar overflow
+            beta[0] += lr * grad[0] / n;
+            for (let j = 0; j < k; j++) {
+                beta[j + 1] += lr * (grad[j + 1] / n - 0.001 * beta[j + 1]);
+            }
+        }
+
+        let ll1 = 0, ll0 = 0;
+        const py = Math.max(1e-6, Math.min(1 - 1e-6, this.mean(y)));
+        for (let i = 0; i < n; i++) {
+            let z = beta[0];
+            for (let j = 0; j < k; j++) z += beta[j + 1] * X[i][j];
+            const p = Math.max(1e-6, Math.min(1 - 1e-6, sigmoid(z)));
+            ll1 += y[i] * Math.log(p) + (1 - y[i]) * Math.log(1 - p);
+            ll0 += y[i] * Math.log(py) + (1 - y[i]) * Math.log(1 - py);
+        }
+        const pseudoR2 = (ll0 !== 0 && ll1 <= ll0) ? Math.max(0, 1 - ll1 / ll0) : 0;
+        const oddsRatios = beta.slice(1).map(b => Math.exp(Math.max(-10, Math.min(10, b))));
+
+        return { beta, oddsRatios, pseudoR2, n, ll1, ll0 };
+    }
+};
+
+// ================================================================
+// CONTROLE DO FORMULÁRIO E INTERFACE
+// ================================================================
+const form = document.getElementById('formPaciente');
+const matriculaInput = document.getElementById('matricula');
+const matriculaFeedback = document.getElementById('matriculaFeedback');
+const tromboliseSelect = document.getElementById('trombolise');
+const tromboliseFields = document.querySelectorAll('.trombolise-fields');
+const transfHemorragicaSelect = document.getElementById('transfHemorragica');
+const divTHSintomatica = document.getElementById('divTHSintomatica');
+
+// 1. Validação em tempo real de matrícula única
+matriculaInput.addEventListener('input', checkMatriculaDisponivel);
+matriculaInput.addEventListener('blur', checkMatriculaDisponivel);
+
+function checkMatriculaDisponivel() {
+    const val = matriculaInput.value.trim();
+    const editMatricula = document.getElementById('editMatriculaOriginal').value;
+
+    if (!val) {
+        matriculaInput.classList.remove('is-valid');
+        matriculaInput.classList.add('is-invalid');
+        matriculaFeedback.textContent = 'A matrícula é obrigatória.';
+        return false;
+    }
+
+    if (DataManager.matriculaExists(val, editMatricula)) {
+        matriculaInput.classList.remove('is-valid');
+        matriculaInput.classList.add('is-invalid');
+        matriculaFeedback.textContent = `A matrícula "${val}" já está cadastrada para outro paciente!`;
+        return false;
+    } else {
+        matriculaInput.classList.remove('is-invalid');
+        matriculaInput.classList.add('is-valid');
+        return true;
+    }
+}
+
+// 2. Visibilidade dinâmica dos campos de trombólise e sangramento
+tromboliseSelect.addEventListener('change', function () {
+    const show = this.value === 'Sim';
+    tromboliseFields.forEach(f => f.style.display = show ? 'block' : 'none');
+    if (!show) {
+        document.getElementById('deltaT').value = '';
+        document.getElementById('portaAgulha').value = '';
+        document.getElementById('transfHemorragica').value = 'Não';
+        document.getElementById('transfHemorragicaSintomatica').value = 'Não';
+    }
+});
+
+transfHemorragicaSelect.addEventListener('change', function() {
+    const thSim = this.value === 'Sim';
+    if (!thSim) {
+        document.getElementById('transfHemorragicaSintomatica').value = 'Não';
+    }
+});
+
+// 3. Cálculo automático dos Dias de Internamento a partir das datas
+function calcularDiasInternamento() {
+    const adm = document.getElementById('dataAdmissao').value;
+    const alta = document.getElementById('dataAlta').value;
+    const diasInput = document.getElementById('diasInternamento');
+
+    if (adm && alta) {
+        const dtAdm = new Date(adm);
+        const dtAlta = new Date(alta);
+        const diffMs = dtAlta - dtAdm;
+        const diffDias = Math.round(diffMs / (1000 * 60 * 60 * 24));
+        if (diffDias >= 0) {
+            diasInput.value = diffDias;
+            diasInput.classList.remove('is-invalid');
+        } else {
+            diasInput.value = '';
+            showToast('Data Inválida', 'A data de alta não pode ser anterior à data de admissão.', 'danger');
+        }
+    } else {
+        diasInput.value = '';
+    }
+}
+document.getElementById('dataAdmissao').addEventListener('change', calcularDiasInternamento);
+document.getElementById('dataAlta').addEventListener('change', calcularDiasInternamento);
+
+// 4. Cálculo automático de Δ NIHSS (Admissão – Alta)
+['nihssAdm', 'nihssAlta'].forEach(id => {
+    document.getElementById(id).addEventListener('input', () => {
+        const adm = parseFloat(document.getElementById('nihssAdm').value);
+        const alta = parseFloat(document.getElementById('nihssAlta').value);
+        const deltaInput = document.getElementById('deltaNihss');
+        if (!isNaN(adm) && !isNaN(alta)) {
+            const delta = adm - alta;
+            deltaInput.value = (delta > 0 ? `+${delta}` : `${delta}`) + ` (Adm: ${adm} → Alta: ${alta})`;
+        } else {
+            deltaInput.value = '';
+        }
+    });
+});
+
+// 5. Cálculo automático de Δ mRS (Admissão – Alta)
+['mrsAdm', 'mrsAlta'].forEach(id => {
+    document.getElementById(id).addEventListener('change', () => {
+        const adm = parseInt(document.getElementById('mrsAdm').value);
+        const alta = parseInt(document.getElementById('mrsAlta').value);
+        const deltaInput = document.getElementById('deltaMrs');
+        if (!isNaN(adm) && !isNaN(alta)) {
+            const delta = adm - alta;
+            deltaInput.value = (delta > 0 ? `+${delta}` : `${delta}`) + ` (Adm: ${adm} → Alta: ${alta})`;
+        } else {
+            deltaInput.value = '';
+        }
+    });
+});
+
+// 6. Coleta dos dados do formulário
+function getFormData() {
+    const fatoresRisco = [];
+    const frMap = {
+        frHAS: 'HAS',
+        frDM2: 'DM2',
+        frDislipidemia: 'Dislipidemia',
+        frTabagismo: 'Tabagismo',
+        frEtilismo: 'Etilismo',
+        frObesidade: 'Obesidade',
+        frCardiopatia: 'Cardiopatia',
+        frAVCPrevio: 'AVC Prévio',
+        frAnticoagulante: 'Anticoag/Antiag',
+        frAnticoncepcional: 'Anticoncepcional'
+    };
+
+    for (const [id, label] of Object.entries(frMap)) {
+        const el = document.getElementById(id);
+        if (el && el.checked) fatoresRisco.push(label);
+    }
+
+    const nihssAdm = document.getElementById('nihssAdm').value !== '' ? parseFloat(document.getElementById('nihssAdm').value) : null;
+    const nihssAlta = document.getElementById('nihssAlta').value !== '' ? parseFloat(document.getElementById('nihssAlta').value) : null;
+    const mrsAdm = document.getElementById('mrsAdm').value !== '' ? parseInt(document.getElementById('mrsAdm').value) : null;
+    const mrsAlta = document.getElementById('mrsAlta').value !== '' ? parseInt(document.getElementById('mrsAlta').value) : null;
+    const diasIntern = document.getElementById('diasInternamento').value !== '' ? parseInt(document.getElementById('diasInternamento').value) : null;
+
+    return {
+        matricula: document.getElementById('matricula').value.trim(),
+        sexo: document.getElementById('sexo').value,
+        idade: parseInt(document.getElementById('idade').value),
+        dataAdmissao: document.getElementById('dataAdmissao').value,
+        dataAlta: document.getElementById('dataAlta').value,
+        diasInternamento: diasIntern,
+        nihssAdm,
+        nihssAlta,
+        deltaNihss: (nihssAdm !== null && nihssAlta !== null) ? nihssAdm - nihssAlta : null,
+        mrsPrevio: document.getElementById('mrsPrevio').value !== '' ? parseInt(document.getElementById('mrsPrevio').value) : null,
+        mrsAdm,
+        mrsAlta,
+        deltaMrs: (mrsAdm !== null && mrsAlta !== null) ? mrsAdm - mrsAlta : null,
+        tempoSintomasAtend: document.getElementById('tempoSintomasAtend').value !== '' ? parseInt(document.getElementById('tempoSintomasAtend').value) : null,
+        tempoAdmTC: document.getElementById('tempoAdmTC').value !== '' ? parseInt(document.getElementById('tempoAdmTC').value) : null,
+        territorio: document.getElementById('territorio').value,
+        bamford: document.getElementById('bamford').value,
+        toast: document.getElementById('toast').value,
+        fatoresRisco,
+        trombolise: document.getElementById('trombolise').value,
+        deltaT: document.getElementById('deltaT').value !== '' ? parseFloat(document.getElementById('deltaT').value) : null,
+        portaAgulha: document.getElementById('portaAgulha').value !== '' ? parseInt(document.getElementById('portaAgulha').value) : null,
+        transfHemorragica: document.getElementById('trombolise').value === 'Sim' ? document.getElementById('transfHemorragica').value : 'Não',
+        transfHemorragicaSintomatica: document.getElementById('trombolise').value === 'Sim' ? document.getElementById('transfHemorragicaSintomatica').value : 'Não',
+        obito: document.getElementById('obito').value,
+        dataCadastro: new Date().toISOString()
+    };
+}
+
+// 7. Povoar formulário para edição
+function populateForm(p) {
+    document.getElementById('editMatriculaOriginal').value = p.matricula;
+    matriculaInput.value = p.matricula;
+    matriculaInput.classList.remove('is-invalid');
+    matriculaInput.classList.add('is-valid');
+
+    document.getElementById('sexo').value = p.sexo;
+    document.getElementById('idade').value = p.idade;
+    document.getElementById('dataAdmissao').value = p.dataAdmissao || '';
+    document.getElementById('dataAlta').value = p.dataAlta || '';
+    document.getElementById('diasInternamento').value = p.diasInternamento !== null ? p.diasInternamento : '';
+
+    document.getElementById('nihssAdm').value = p.nihssAdm !== null ? p.nihssAdm : '';
+    document.getElementById('nihssAlta').value = p.nihssAlta !== null ? p.nihssAlta : '';
+    document.getElementById('nihssAdm').dispatchEvent(new Event('input'));
+
+    document.getElementById('mrsPrevio').value = p.mrsPrevio !== null ? p.mrsPrevio : '';
+    document.getElementById('mrsAdm').value = p.mrsAdm !== null ? p.mrsAdm : '';
+    document.getElementById('mrsAlta').value = p.mrsAlta !== null ? p.mrsAlta : '';
+    document.getElementById('mrsAdm').dispatchEvent(new Event('change'));
+
+    document.getElementById('tempoSintomasAtend').value = p.tempoSintomasAtend !== null ? p.tempoSintomasAtend : '';
+    document.getElementById('tempoAdmTC').value = p.tempoAdmTC !== null ? p.tempoAdmTC : '';
+    document.getElementById('territorio').value = p.territorio;
+    document.getElementById('bamford').value = p.bamford;
+    document.getElementById('toast').value = p.toast;
+
+    const frMap = {
+        'HAS': 'frHAS', 'DM2': 'frDM2', 'Dislipidemia': 'frDislipidemia',
+        'Tabagismo': 'frTabagismo', 'Etilismo': 'frEtilismo', 'Obesidade': 'frObesidade',
+        'Cardiopatia': 'frCardiopatia', 'AVC Prévio': 'frAVCPrevio',
+        'Anticoag/Antiag': 'frAnticoagulante', 'Anticoncepcional': 'frAnticoncepcional'
+    };
+    Object.values(frMap).forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.checked = false;
+    });
+    (p.fatoresRisco || []).forEach(fr => {
+        const id = frMap[fr];
+        if (id && document.getElementById(id)) document.getElementById(id).checked = true;
+    });
+
+    document.getElementById('trombolise').value = p.trombolise;
+    tromboliseSelect.dispatchEvent(new Event('change'));
+
+    document.getElementById('deltaT').value = p.deltaT !== null ? p.deltaT : '';
+    document.getElementById('portaAgulha').value = p.portaAgulha !== null ? p.portaAgulha : '';
+    document.getElementById('transfHemorragica').value = p.transfHemorragica || 'Não';
+    document.getElementById('transfHemorragicaSintomatica').value = p.transfHemorragicaSintomatica || 'Não';
+
+    document.getElementById('obito').value = p.obito;
+
+    document.getElementById('btnSalvar').innerHTML = '<i class="bi bi-check2-circle me-2"></i>Salvar Alterações';
+
+    // Vai para a aba Cadastro e rola para o topo
+    document.querySelector('[href="#tabCadastro"]').click();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function resetForm() {
+    form.reset();
+    document.getElementById('editMatriculaOriginal').value = '';
+    matriculaInput.classList.remove('is-valid', 'is-invalid');
+    document.getElementById('deltaNihss').value = '';
+    document.getElementById('deltaMrs').value = '';
+    document.getElementById('diasInternamento').value = '';
+    tromboliseFields.forEach(f => f.style.display = 'none');
+    form.classList.remove('was-validated');
+    document.getElementById('btnSalvar').innerHTML = '<i class="bi bi-save me-2"></i>Salvar Paciente';
+}
+
+// 8. Envio do Formulário com verificação estrita de duplicidade
+form.addEventListener('submit', function (e) {
+    e.preventDefault();
+
+    const matriculaVal = matriculaInput.value.trim();
+    const editMatricula = document.getElementById('editMatriculaOriginal').value;
+
+    if (!matriculaVal) {
+        matriculaInput.classList.add('is-invalid');
+        showToast('Erro de Validação', 'Por favor, informe a matrícula do paciente.', 'danger');
+        return;
+    }
+
+    // Validação de unicidade da matrícula
+    if (DataManager.matriculaExists(matriculaVal, editMatricula)) {
+        matriculaInput.classList.add('is-invalid');
+        matriculaFeedback.textContent = `A matrícula "${matriculaVal}" já está em uso! Não é permitida duplicidade de matrícula.`;
+        showToast('Matrícula Duplicada', `A matrícula ${matriculaVal} já pertence a outro paciente cadastrado.`, 'danger');
+        matriculaInput.focus();
+        return;
+    }
+
+    if (!form.checkValidity()) {
+        form.classList.add('was-validated');
+        showToast('Atenção', 'Preencha todos os campos obrigatórios marcados com asterisco (*).', 'warning');
+        return;
+    }
+
+    const idade = parseInt(document.getElementById('idade').value);
+    if (isNaN(idade) || idade >= 50 || idade < 0) {
+        showToast('Critério de Inclusão', 'A idade deve ser menor que 50 anos (&lt; 50 anos).', 'danger');
+        document.getElementById('idade').focus();
+        return;
+    }
+
+    const data = getFormData();
+
+    if (editMatricula) {
+        DataManager.update(editMatricula, data);
+        showToast('Atualizado', `Dados da matrícula ${data.matricula} atualizados com sucesso!`, 'success');
+    } else {
+        DataManager.add(data);
+        showToast('Cadastrado', `Paciente com matrícula ${data.matricula} adicionado com sucesso!`, 'success');
+    }
+
+    resetForm();
+    refreshAll();
+});
+
+document.getElementById('btnLimpar').addEventListener('click', resetForm);
+
+// ================================================================
+// RENDERIZAÇÃO DA TABELA DO BANCO DE DADOS
+// ================================================================
+function renderTable(filter = '') {
+    const tbody = document.getElementById('tabelaBody');
+    const data = DataManager.getAll();
+    const filterLower = (filter || '').toLowerCase();
+
+    const filtered = filterLower
+        ? data.filter(p => {
+            return p.matricula.toLowerCase().includes(filterLower) ||
+                   p.sexo.toLowerCase().includes(filterLower) ||
+                   p.toast.toLowerCase().includes(filterLower) ||
+                   p.bamford.toLowerCase().includes(filterLower) ||
+                   p.territorio.toLowerCase().includes(filterLower) ||
+                   (p.fatoresRisco || []).some(f => f.toLowerCase().includes(filterLower));
+        })
+        : data;
+
+    document.getElementById('semDados').style.display = filtered.length ? 'none' : 'block';
+
+    tbody.innerHTML = filtered.map(p => {
+        let thBadge = '<span class="text-muted">—</span>';
+        if (p.trombolise === 'Sim') {
+            if (p.transfHemorragicaSintomatica === 'Sim') {
+                thBadge = '<span class="badge bg-danger">THS (sICH)</span>';
+            } else if (p.transfHemorragica === 'Sim') {
+                thBadge = '<span class="badge bg-warning text-dark">TH Assint.</span>';
+            } else {
+                thBadge = '<span class="badge bg-light text-secondary border">Sem TH</span>';
+            }
+        }
+
+        const trombInfo = p.trombolise === 'Sim'
+            ? `<span class="badge bg-primary">Sim (${p.deltaT !== null ? p.deltaT + 'h' : '—'})</span>`
+            : `<span class="badge bg-secondary">Não</span>`;
+
+        return `
+            <tr>
+                <td><strong class="text-primary">${p.matricula}</strong></td>
+                <td>${p.sexo === 'Masculino' ? '<span class="badge bg-info text-dark">M</span>' : '<span class="badge bg-danger-subtle text-danger">F</span>'}</td>
+                <td>${p.idade}</td>
+                <td>${p.diasInternamento !== null ? `<strong>${p.diasInternamento}</strong> d` : '—'}</td>
+                <td>${p.nihssAdm !== null ? p.nihssAdm : '—'}</td>
+                <td>${p.nihssAlta !== null ? p.nihssAlta : '—'}</td>
+                <td>${p.deltaNihss !== null ? (p.deltaNihss >= 0 ? `<span class="text-success fw-bold">+${p.deltaNihss}</span>` : `<span class="text-danger fw-bold">${p.deltaNihss}</span>`) : '—'}</td>
+                <td>${p.mrsPrevio !== null ? p.mrsPrevio : '—'}</td>
+                <td>${p.mrsAdm !== null ? p.mrsAdm : '—'}</td>
+                <td>${p.mrsAlta !== null ? p.mrsAlta : '—'}</td>
+                <td>${p.deltaMrs !== null ? (p.deltaMrs >= 0 ? `<span class="text-success fw-bold">+${p.deltaMrs}</span>` : `<span class="text-danger fw-bold">${p.deltaMrs}</span>`) : '—'}</td>
+                <td><span class="badge bg-light text-dark border" title="${p.toast}">${p.toast.length > 18 ? p.toast.substring(0, 16) + '...' : p.toast}</span></td>
+                <td><span class="badge bg-secondary-subtle text-dark">${p.bamford}</span></td>
+                <td><small>${p.territorio}</small></td>
+                <td>${(p.fatoresRisco || []).map(f => `<span class="risk-badge">${f}</span>`).join('')}</td>
+                <td>${trombInfo}</td>
+                <td>${thBadge}</td>
+                <td><span class="badge ${p.obito === 'Sim' ? 'bg-danger' : 'bg-success'}">${p.obito === 'Sim' ? 'ÓBITO' : 'Alta'}</span></td>
+                <td class="no-print text-nowrap">
+                    <button class="btn btn-sm btn-outline-primary py-0 px-2" onclick="editPatient('${p.matricula}')" title="Editar"><i class="bi bi-pencil"></i></button>
+                    <button class="btn btn-sm btn-outline-danger py-0 px-2 ms-1" onclick="deletePatient('${p.matricula}')" title="Excluir"><i class="bi bi-trash"></i></button>
+                </td>
+            </tr>
+        `;
+    }).join('');
+}
+
+window.editPatient = function (matricula) {
+    const p = DataManager.getAll().find(item => item.matricula.toLowerCase() === matricula.toLowerCase());
+    if (p) populateForm(p);
+};
+
+window.deletePatient = function (matricula) {
+    if (confirm(`Deseja realmente excluir o paciente de matrícula "${matricula}"?`)) {
+        DataManager.remove(matricula);
+        showToast('Excluído', `Registro ${matricula} removido com sucesso.`, 'info');
+        refreshAll();
+    }
+};
+
+document.getElementById('btnDeleteAll').addEventListener('click', function () {
+    const total = DataManager.getAll().length;
+    if (!total) {
+        showToast('Vazio', 'O banco de dados já está vazio.', 'info');
+        return;
+    }
+    if (confirm(`ATENÇÃO CRÍTICA:\nDeseja realmente excluir TODOS os ${total} pacientes cadastrados?\nEsta ação NÃO pode ser desfeita!`)) {
+        DataManager.clear();
+        showToast('Base Zerada', 'Todos os registros foram excluídos.', 'danger');
+        refreshAll();
+    }
+});
+
+document.getElementById('searchInput').addEventListener('input', function () {
+    renderTable(this.value);
+});
+
+// ================================================================
+// GESTOR DE GRÁFICOS (CHART.JS)
+// ================================================================
+let chartInstances = {};
+
+function destroyChart(id) {
+    if (chartInstances[id]) {
+        chartInstances[id].destroy();
+        delete chartInstances[id];
+    }
+}
+
+function createChart(id, config) {
+    destroyChart(id);
+    const ctx = document.getElementById(id);
+    if (!ctx) return;
+    chartInstances[id] = new Chart(ctx, config);
+}
+
+const PALETTE = ['#1a5276', '#2980b9', '#27ae60', '#e67e22', '#8e44ad', '#c0392b', '#16a085', '#d35400', '#2c3e50', '#f39c12', '#3498db', '#e74c3c'];
+
+function countBy(arr, keyFn) {
+    const counts = {};
+    arr.forEach(item => {
+        const val = typeof keyFn === 'function' ? keyFn(item) : item[keyFn];
+        if (val !== undefined && val !== null && val !== '') {
+            counts[val] = (counts[val] || 0) + 1;
+        }
+    });
+    return counts;
+}
+
+// ================================================================
+// EPIDEMIOLOGIA COMPLETA
+// ================================================================
+function renderEpidemiology() {
+    const data = DataManager.getAll();
+    const n = data.length;
+    const cards = document.getElementById('statCards');
+
+    if (!n) {
+        cards.innerHTML = '<div class="col-12"><div class="alert alert-warning"><i class="bi bi-info-circle me-2"></i>Nenhum paciente cadastrado. Insira pacientes para visualizar a distribuição epidemiológica.</div></div>';
+        return;
+    }
+
+    const idades = data.map(p => p.idade);
+    const nihssAdms = data.filter(p => p.nihssAdm !== null).map(p => p.nihssAdm);
+    const diasInternValidos = data.filter(p => p.diasInternamento !== null).map(p => p.diasInternamento);
+    const obitos = data.filter(p => p.obito === 'Sim').length;
+    const tromb = data.filter(p => p.trombolise === 'Sim').length;
+    const ths = data.filter(p => p.transfHemorragicaSintomatica === 'Sim').length;
+
+    cards.innerHTML = `
+        <div class="col-6 col-md-2">
+            <div class="stat-card">
+                <div class="stat-value">${n}</div>
+                <div class="stat-label">Total Pacientes (&lt;50a)</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-2">
+            <div class="stat-card">
+                <div class="stat-value">${Stats.mean(idades).toFixed(1)} <small class="fs-6">anos</small></div>
+                <div class="stat-label">Idade Média (DP: ${Stats.std(idades).toFixed(1)})</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-2">
+            <div class="stat-card">
+                <div class="stat-value">${nihssAdms.length ? Stats.mean(nihssAdms).toFixed(1) : '—'}</div>
+                <div class="stat-label">NIHSS Admissão Médio</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-2">
+            <div class="stat-card">
+                <div class="stat-value">${diasInternValidos.length ? Stats.mean(diasInternValidos).toFixed(1) : '—'} <small class="fs-6">dias</small></div>
+                <div class="stat-label">Média Internamento (Med: ${diasInternValidos.length ? Stats.median(diasInternValidos).toFixed(0) : '—'})</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-2">
+            <div class="stat-card">
+                <div class="stat-value text-success">${tromb} <small class="fs-6">(${(tromb/n*100).toFixed(0)}%)</small></div>
+                <div class="stat-label">Trombólise (sICH: ${ths})</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-2">
+            <div class="stat-card">
+                <div class="stat-value text-danger">${obitos} <small class="fs-6">(${(obitos/n*100).toFixed(1)}%)</small></div>
+                <div class="stat-label">Taxa de Mortalidade</div>
+            </div>
+        </div>
+    `;
+
+    // 1. Gráfico: Sexo
+    const sexoCounts = countBy(data, 'sexo');
+    createChart('chartSexo', {
+        type: 'doughnut',
+        data: {
+            labels: Object.keys(sexoCounts),
+            datasets: [{ data: Object.values(sexoCounts), backgroundColor: ['#2980b9', '#e74c3c'] }]
+        },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
+    });
+
+    // 2. Gráfico: Faixa Etária
+    const faixasIdade = { '18-24': 0, '25-29': 0, '30-34': 0, '35-39': 0, '40-44': 0, '45-49': 0 };
+    data.forEach(p => {
+        if (p.idade <= 24) faixasIdade['18-24']++;
+        else if (p.idade <= 29) faixasIdade['25-29']++;
+        else if (p.idade <= 34) faixasIdade['30-34']++;
+        else if (p.idade <= 39) faixasIdade['35-39']++;
+        else if (p.idade <= 44) faixasIdade['40-44']++;
+        else faixasIdade['45-49']++;
+    });
+    createChart('chartIdade', {
+        type: 'bar',
+        data: {
+            labels: Object.keys(faixasIdade),
+            datasets: [{ label: 'Nº Pacientes', data: Object.values(faixasIdade), backgroundColor: '#2980b9', borderRadius: 4 }]
+        },
+        options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }, plugins: { legend: { display: false } } }
+    });
+
+    // 3. NOVO Gráfico: Dias de Internamento (Histograma por faixas)
+    const faixasIntern = { '0–3 dias': 0, '4–7 dias': 0, '8–14 dias': 0, '15–21 dias': 0, '> 21 dias': 0 };
+    data.forEach(p => {
+        if (p.diasInternamento !== null) {
+            const d = p.diasInternamento;
+            if (d <= 3) faixasIntern['0–3 dias']++;
+            else if (d <= 7) faixasIntern['4–7 dias']++;
+            else if (d <= 14) faixasIntern['8–14 dias']++;
+            else if (d <= 21) faixasIntern['15–21 dias']++;
+            else faixasIntern['> 21 dias']++;
+        }
+    });
+    createChart('chartDiasInternamento', {
+        type: 'bar',
+        data: {
+            labels: Object.keys(faixasIntern),
+            datasets: [{ label: 'Pacientes', data: Object.values(faixasIntern), backgroundColor: '#16a085', borderRadius: 4 }]
+        },
+        options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }, plugins: { legend: { display: false } } }
+    });
+
+    // 4. BAMFORD
+    const bamfordCounts = countBy(data, 'bamford');
+    createChart('chartBamford', {
+        type: 'pie',
+        data: {
+            labels: Object.keys(bamfordCounts),
+            datasets: [{ data: Object.values(bamfordCounts), backgroundColor: PALETTE.slice(0, 4) }]
+        },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
+    });
+
+    // 5. TOAST
+    const toastCounts = countBy(data, 'toast');
+    createChart('chartToast', {
+        type: 'pie',
+        data: {
+            labels: Object.keys(toastCounts),
+            datasets: [{ data: Object.values(toastCounts), backgroundColor: PALETTE.slice(0, 5) }]
+        },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
+    });
+
+    // 6. Território Arterial
+    const terrCounts = countBy(data, 'territorio');
+    createChart('chartTerritorio', {
+        type: 'bar',
+        data: {
+            labels: Object.keys(terrCounts),
+            datasets: [{ label: 'Pacientes', data: Object.values(terrCounts), backgroundColor: '#2c3e50', borderRadius: 4 }]
+        },
+        options: { responsive: true, maintainAspectRatio: false, indexAxis: 'y', scales: { x: { beginAtZero: true, ticks: { stepSize: 1 } } }, plugins: { legend: { display: false } } }
+    });
+
+    // 7. Fatores de Risco (incluindo ETILISMO)
+    const frLabels = ['HAS', 'DM2', 'Dislipidemia', 'Tabagismo', 'Etilismo', 'Obesidade', 'Cardiopatia', 'AVC Prévio', 'Anticoag/Antiag', 'Anticoncepcional'];
+    const frCounts = frLabels.map(fr => data.filter(p => (p.fatoresRisco || []).includes(fr)).length);
+    createChart('chartFatoresRisco', {
+        type: 'bar',
+        data: {
+            labels: frLabels,
+            datasets: [{
+                label: 'Prevalência (N)',
+                data: frCounts,
+                backgroundColor: frLabels.map(fr => fr === 'Etilismo' ? '#c0392b' : '#e67e22'),
+                borderRadius: 4
+            }]
+        },
+        options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }, plugins: { legend: { display: false } } }
+    });
+
+    // 8. NIHSS Gravidade
+    const nihssCateg = { 'Leve (0–4)': 0, 'Moderado (5–15)': 0, 'Mod-Grave (16–20)': 0, 'Grave (21–42)': 0 };
+    data.forEach(p => {
+        if (p.nihssAdm !== null) {
+            if (p.nihssAdm <= 4) nihssCateg['Leve (0–4)']++;
+            else if (p.nihssAdm <= 15) nihssCateg['Moderado (5–15)']++;
+            else if (p.nihssAdm <= 20) nihssCateg['Mod-Grave (16–20)']++;
+            else nihssCateg['Grave (21–42)']++;
+        }
+    });
+    createChart('chartNIHSS', {
+        type: 'doughnut',
+        data: {
+            labels: Object.keys(nihssCateg),
+            datasets: [{ data: Object.values(nihssCateg), backgroundColor: ['#27ae60', '#f39c12', '#e67e22', '#c0392b'] }]
+        },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
+    });
+
+    // 9. Trombólise vs Desfecho e Complicação
+    const tSim = data.filter(p => p.trombolise === 'Sim');
+    const tNao = data.filter(p => p.trombolise === 'Não');
+    createChart('chartTrombolise', {
+        type: 'bar',
+        data: {
+            labels: ['Trombólise (Sim)', 'Trombólise (Não)'],
+            datasets: [
+                { label: 'Alta com Vida (Sem TH)', data: [tSim.filter(p => p.obito === 'Não' && p.transfHemorragica !== 'Sim').length, tNao.filter(p => p.obito === 'Não').length], backgroundColor: '#27ae60' },
+                { label: 'Alta com Vida (Com TH)', data: [tSim.filter(p => p.obito === 'Não' && p.transfHemorragica === 'Sim').length, 0], backgroundColor: '#f39c12' },
+                { label: 'Óbito Hospitalar', data: [tSim.filter(p => p.obito === 'Sim').length, tNao.filter(p => p.obito === 'Sim').length], backgroundColor: '#c0392b' }
+            ]
+        },
+        options: { responsive: true, maintainAspectRatio: false, scales: { x: { stacked: true }, y: { stacked: true, beginAtZero: true, ticks: { stepSize: 1 } } }, plugins: { legend: { position: 'bottom' } } }
+    });
+
+    // 10. NOVO: Análise Epidemiológica Estratificada da Variação de mRS por Trombólise vs Sem Trombólise por TOAST
+    renderToastMRSEpidemio(data);
+
+    // 11. Tabela Descritiva de Variáveis Contínuas
+    renderTabelaDescritiva(data);
+}
+
+// Subanálise Epidemiológica: Variação de mRS por TOAST e Trombólise
+function renderToastMRSEpidemio(data) {
+    const toastCategories = [
+        'Aterosclerose de Grandes Artérias',
+        'Cardioembolismo',
+        'Oclusão de Pequenas Artérias',
+        'Outra Etiologia Determinada',
+        'Etiologia Indeterminada'
+    ];
+
+    const labels = [];
+    const mediaComTrombo = [];
+    const mediaSemTrombo = [];
+    const nComTrombo = [];
+    const nSemTrombo = [];
+    const rowsTable = [];
+
+    toastCategories.forEach(cat => {
+        const pacientesCat = data.filter(p => p.toast === cat && p.deltaMrs !== null);
+        const grupoCom = pacientesCat.filter(p => p.trombolise === 'Sim').map(p => p.deltaMrs);
+        const grupoSem = pacientesCat.filter(p => p.trombolise === 'Não').map(p => p.deltaMrs);
+
+        const mCom = grupoCom.length ? Stats.mean(grupoCom) : 0;
+        const mSem = grupoSem.length ? Stats.mean(grupoSem) : 0;
+        const sdCom = Stats.std(grupoCom);
+        const sdSem = Stats.std(grupoSem);
+
+        labels.push(cat.replace('Aterosclerose de Grandes Artérias', 'Grandes Artérias').replace('Oclusão de Pequenas Artérias', 'Pequenas Art. (Lacunar)'));
+        mediaComTrombo.push(grupoCom.length ? Number(mCom.toFixed(2)) : 0);
+        mediaSemTrombo.push(grupoSem.length ? Number(mSem.toFixed(2)) : 0);
+        nComTrombo.push(grupoCom.length);
+        nSemTrombo.push(grupoSem.length);
+
+        // Desfecho favorável mRS alta ≤ 2
+        const favCom = data.filter(p => p.toast === cat && p.trombolise === 'Sim' && p.mrsAlta !== null && p.mrsAlta <= 2).length;
+        const totComAlta = data.filter(p => p.toast === cat && p.trombolise === 'Sim' && p.mrsAlta !== null).length;
+        const txFavCom = totComAlta ? (favCom / totComAlta * 100).toFixed(1) + '%' : '—';
+
+        const favSem = data.filter(p => p.toast === cat && p.trombolise === 'Não' && p.mrsAlta !== null && p.mrsAlta <= 2).length;
+        const totSemAlta = data.filter(p => p.toast === cat && p.trombolise === 'Não' && p.mrsAlta !== null).length;
+        const txFavSem = totSemAlta ? (favSem / totSemAlta * 100).toFixed(1) + '%' : '—';
+
+        let diff = (grupoCom.length && grupoSem.length) ? (mCom - mSem).toFixed(2) : '—';
+
+        rowsTable.push({
+            toast: cat,
+            nCom: grupoCom.length,
+            mediaCom: grupoCom.length ? `${mCom.toFixed(2)} &plusmn; ${sdCom.toFixed(2)}` : '<span class="text-muted">N/A</span>',
+            medianaCom: grupoCom.length ? Stats.median(grupoCom).toFixed(1) : '—',
+            txFavCom: txFavCom,
+            nSem: grupoSem.length,
+            mediaSem: grupoSem.length ? `${mSem.toFixed(2)} &plusmn; ${sdSem.toFixed(2)}` : '<span class="text-muted">N/A</span>',
+            medianaSem: grupoSem.length ? Stats.median(grupoSem).toFixed(1) : '—',
+            txFavSem: txFavSem,
+            diff: diff
+        });
+    });
+
+    createChart('chartToastMRSTrombo', {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [
+                {
+                    label: 'Com Trombólise (Δ mRS médio)',
+                    data: mediaComTrombo,
+                    backgroundColor: '#27ae60',
+                    borderColor: '#1e8449',
+                    borderWidth: 1,
+                    borderRadius: 4
+                },
+                {
+                    label: 'Sem Trombólise (Δ mRS médio)',
+                    data: mediaSemTrombo,
+                    backgroundColor: '#e67e22',
+                    borderColor: '#d35400',
+                    borderWidth: 1,
+                    borderRadius: 4
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    title: { display: true, text: 'Variação Média do mRS (Admissão – Alta)' },
+                    suggestedMin: -1,
+                    suggestedMax: 3
+                }
+            },
+            plugins: {
+                legend: { position: 'bottom' },
+                tooltip: {
+                    callbacks: {
+                        afterLabel: function(ctx) {
+                            const idx = ctx.dataIndex;
+                            const n = ctx.datasetIndex === 0 ? nComTrombo[idx] : nSemTrombo[idx];
+                            return `Amostra: n = ${n}`;
+                        }
+                    }
+                }
+            }
+        }
+    });
+
+    document.getElementById('tabelaToastMRSEpidemio').innerHTML = `
+        <table class="table table-sm table-bordered table-hover">
+            <thead class="table-light">
+                <tr>
+                    <th rowspan="2" class="align-middle bg-primary text-white">Subtipo TOAST</th>
+                    <th colspan="4" class="text-center bg-success text-white">Com Trombólise</th>
+                    <th colspan="4" class="text-center bg-warning text-dark">Sem Trombólise</th>
+                    <th rowspan="2" class="align-middle text-center bg-secondary text-white">Diferença Médias</th>
+                </tr>
+                <tr>
+                    <th class="text-center">N</th>
+                    <th class="text-center">&Delta; mRS Médio &plusmn; DP</th>
+                    <th class="text-center">Mediana</th>
+                    <th class="text-center">Funcional Favorável (mRS&le;2)</th>
+                    <th class="text-center">N</th>
+                    <th class="text-center">&Delta; mRS Médio &plusmn; DP</th>
+                    <th class="text-center">Mediana</th>
+                    <th class="text-center">Funcional Favorável (mRS&le;2)</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${rowsTable.map(r => `
+                    <tr>
+                        <td><strong>${r.toast}</strong></td>
+                        <td class="text-center">${r.nCom}</td>
+                        <td class="text-center fw-bold text-success">${r.mediaCom}</td>
+                        <td class="text-center">${r.medianaCom}</td>
+                        <td class="text-center"><span class="badge bg-success-subtle text-success">${r.txFavCom}</span></td>
+                        <td class="text-center">${r.nSem}</td>
+                        <td class="text-center fw-bold text-warning-emphasis">${r.mediaSem}</td>
+                        <td class="text-center">${r.medianaSem}</td>
+                        <td class="text-center"><span class="badge bg-secondary-subtle text-dark">${r.txFavSem}</span></td>
+                        <td class="text-center fw-bold ${r.diff > 0 ? 'text-success' : (r.diff < 0 ? 'text-danger' : '')}">${r.diff > 0 ? '+' + r.diff : r.diff}</td>
+                    </tr>
+                `).join('')}
+            </tbody>
+        </table>
+    `;
+}
+
+function renderTabelaDescritiva(data) {
+    const contVars = [
+        { name: 'Idade (anos)', vals: data.map(p => p.idade) },
+        { name: 'Dias de Internamento', vals: data.filter(p => p.diasInternamento !== null).map(p => p.diasInternamento) },
+        { name: 'NIHSS Admissão', vals: data.filter(p => p.nihssAdm !== null).map(p => p.nihssAdm) },
+        { name: 'NIHSS Alta', vals: data.filter(p => p.nihssAlta !== null).map(p => p.nihssAlta) },
+        { name: 'Δ NIHSS (Adm – Alta)', vals: data.filter(p => p.deltaNihss !== null).map(p => p.deltaNihss) },
+        { name: 'mRS Admissão', vals: data.filter(p => p.mrsAdm !== null).map(p => p.mrsAdm) },
+        { name: 'mRS Alta', vals: data.filter(p => p.mrsAlta !== null).map(p => p.mrsAlta) },
+        { name: 'Δ mRS (Adm – Alta)', vals: data.filter(p => p.deltaMrs !== null).map(p => p.deltaMrs) },
+        { name: 'Tempo Sintomas-Atendimento (min)', vals: data.filter(p => p.tempoSintomasAtend !== null).map(p => p.tempoSintomasAtend) },
+        { name: 'Tempo Admissão-TC Crânio (min)', vals: data.filter(p => p.tempoAdmTC !== null).map(p => p.tempoAdmTC) },
+        { name: 'Delta T Trombólise (horas)', vals: data.filter(p => p.deltaT !== null).map(p => p.deltaT) },
+        { name: 'Tempo Porta-Agulha (min)', vals: data.filter(p => p.portaAgulha !== null).map(p => p.portaAgulha) }
+    ];
+
+    document.getElementById('tabelaDescritiva').innerHTML = `
+        <table class="table table-sm table-striped table-hover mb-0">
+            <thead>
+                <tr>
+                    <th>Variável Contínua</th>
+                    <th class="text-center">N</th>
+                    <th class="text-center">Média &plusmn; DP</th>
+                    <th class="text-center">Mediana (IIQ)</th>
+                    <th class="text-center">Mín – Máx</th>
+                    <th class="text-center">Q1</th>
+                    <th class="text-center">Q3</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${contVars.map(v => {
+                    const iq = Stats.iqr(v.vals);
+                    const hasVals = v.vals.length > 0;
+                    return `
+                        <tr>
+                            <td><strong>${v.name}</strong></td>
+                            <td class="text-center">${v.vals.length}</td>
+                            <td class="text-center">${hasVals ? `${Stats.mean(v.vals).toFixed(2)} &plusmn; ${Stats.std(v.vals).toFixed(2)}` : '—'}</td>
+                            <td class="text-center">${hasVals ? `${Stats.median(v.vals).toFixed(2)} (${iq.iqr.toFixed(2)})` : '—'}</td>
+                            <td class="text-center">${hasVals ? `${Stats.min(v.vals)} – ${Stats.max(v.vals)}` : '—'}</td>
+                            <td class="text-center">${hasVals ? iq.q1.toFixed(2) : '—'}</td>
+                            <td class="text-center">${hasVals ? iq.q3.toFixed(2) : '—'}</td>
+                        </tr>
+                    `;
+                }).join('')}
+            </tbody>
+        </table>
+    `;
+}
+
+// ================================================================
+// ANÁLISES ESTATÍSTICAS E MODELAGENS
+// ================================================================
+function renderAnalysis() {
+    const data = DataManager.getAll();
+
+    analysis1(data); // Idade vs NIHSS Adm
+    analysis2(data); // NOVO: Dias de Internamento vs NIHSS Adm (Regressão Linear & Logística)
+    analysis3(data); // Δ NIHSS vs Trombólise
+    analysis4(data); // Fatores de Risco vs NIHSS Adm
+    analysis5(data); // Δ mRS vs Fatores de Risco
+    analysis6(data); // Δ mRS vs Trombólise Global
+    analysis7(data); // NOVO: Δ mRS vs Trombólise Estratificado por TOAST
+    analysis8(data); // Regressão Logística: Óbito
+}
+
+function pLabel(p) {
+    if (p === null || p === undefined || isNaN(p)) return '—';
+    if (p < 0.001) return `<span class="significant">&lt; 0.001 ***</span>`;
+    if (p < 0.01) return `<span class="significant">${p.toFixed(4)} **</span>`;
+    if (p < 0.05) return `<span class="significant">${p.toFixed(4)} *</span>`;
+    return `<span class="not-significant">${p.toFixed(4)} (ns)</span>`;
+}
+
+// 1. Regressão Linear: Idade vs NIHSS Admissão
+function analysis1(data) {
+    const div = document.getElementById('resultRegIdadeNIHSS');
+    const valid = data.filter(p => p.idade !== null && p.nihssAdm !== null);
+
+    if (valid.length < 3) {
+        div.innerHTML = '<p class="text-muted">Mínimo de 3 pacientes com idade e NIHSS admissão preenchidos.</p>';
+        destroyChart('chartRegIdadeNIHSS');
+        return;
+    }
+
+    const x = valid.map(p => p.idade);
+    const y = valid.map(p => p.nihssAdm);
+    const reg = Stats.linearRegression(x, y);
+
+    if (!reg) {
+        div.innerHTML = '<p class="text-muted">Variabilidade insuficiente para cálculo da regressão linear.</p>';
+        return;
+    }
+
+    const xMin = Stats.min(x), xMax = Stats.max(x);
+    createChart('chartRegIdadeNIHSS', {
+        type: 'scatter',
+        data: {
+            datasets: [
+                {
+                    label: 'Pacientes',
+                    data: x.map((xi, i) => ({ x: xi, y: y[i] })),
+                    backgroundColor: '#2980b9',
+                    pointRadius: 5
+                },
+                {
+                    label: `Reta Ajustada (y = ${reg.slope.toFixed(3)}x + ${reg.intercept.toFixed(3)})`,
+                    data: [{ x: xMin, y: reg.slope * xMin + reg.intercept }, { x: xMax, y: reg.slope * xMax + reg.intercept }],
+                    type: 'line',
+                    borderColor: '#c0392b',
+                    borderWidth: 2,
+                    pointRadius: 0,
+                    fill: false
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                x: { title: { display: true, text: 'Idade (anos)' } },
+                y: { title: { display: true, text: 'NIHSS Admissão' }, beginAtZero: true }
+            },
+            plugins: { legend: { position: 'bottom' } }
+        }
+    });
+
+    div.innerHTML = `
+        <h6><i class="bi bi-graph-up me-2"></i>Regressão Linear Simples: Idade e Gravidade Admissional</h6>
+        <table class="table table-sm">
+            <tr><td>Tamanho amostral (N)</td><td><strong>${reg.n}</strong></td></tr>
+            <tr><td>Coeficiente de inclinação (&beta;)</td><td>${reg.slope.toFixed(4)}</td></tr>
+            <tr><td>Coeficiente de Correlação de Pearson (<em>r</em>)</td><td><strong>${reg.r.toFixed(4)}</strong></td></tr>
+            <tr><td>Coeficiente de Determinação (<em>R&sup2;</em>)</td><td>${(reg.r2 * 100).toFixed(2)}%</td></tr>
+            <tr><td>Estatística <em>t</em> (gl = ${reg.df})</td><td>${reg.tStat.toFixed(3)}</td></tr>
+            <tr><td>Significância (p-valor)</td><td>${pLabel(reg.pValue)}</td></tr>
+        </table>
+        <p class="small mb-0"><strong>Interpretação:</strong> ${reg.pValue < 0.05
+            ? `Associação estatisticamente significante (p = ${reg.pValue.toFixed(4)}). A cada ano adicional de idade, o NIHSS admissional varia em média ${reg.slope.toFixed(2)} pontos.`
+            : `Não foi encontrada correlação linear estatisticamente significante entre a idade e o escore NIHSS na admissão nesta amostra (p = ${reg.pValue.toFixed(4)}).`
+        }</p>
+    `;
+}
+
+// 2. NOVO: Análise entre Dias de Internamento e NIHSS Admissão (Regressão Linear & Logística)
+function analysis2(data) {
+    const div = document.getElementById('resultRegInternNIHSS');
+    const valid = data.filter(p => p.diasInternamento !== null && p.nihssAdm !== null);
+
+    if (valid.length < 3) {
+        div.innerHTML = '<p class="text-muted">Mínimo de 3 pacientes com datas de admissão, alta e NIHSS preenchidos.</p>';
+        destroyChart('chartRegInternNIHSS');
+        return;
+    }
+
+    const x = valid.map(p => p.nihssAdm); // NIHSS como preditor
+    const y = valid.map(p => p.diasInternamento); // Dias de internamento como desfecho
+
+    const reg = Stats.linearRegression(x, y);
+
+    // Regressão Logística para Internação Prolongada (> 7 dias ou mediana)
+    const corteDias = 7;
+    const yLog = y.map(d => d > corteDias ? 1 : 0);
+    const nProlongado = yLog.filter(v => v === 1).length;
+    const nCurto = yLog.filter(v => v === 0).length;
+
+    let logisticaHtml = '';
+    if (valid.length >= 6 && nProlongado >= 2 && nCurto >= 2) {
+        const meanX = Stats.mean(x), sdX = Stats.std(x) || 1;
+        const Xnorm = x.map(xi => [(xi - meanX) / sdX]);
+        const logReg = Stats.logisticRegression(Xnorm, yLog, 1500, 0.05);
+
+        if (logReg) {
+            const orPerSD = logReg.oddsRatios[0];
+            const orPerUnit = Math.exp(logReg.beta[1] / sdX);
+            logisticaHtml = `
+                <hr>
+                <h6><i class="bi bi-funnel me-2"></i>Regressão Logística: Predição de Internação Prolongada (&gt; ${corteDias} dias)</h6>
+                <table class="table table-sm">
+                    <tr><td>Desfecho analisado</td><td>Internação &gt; ${corteDias} dias (n = ${nProlongado} vs &le;${corteDias}d: ${nCurto})</td></tr>
+                    <tr><td>Odds Ratio (por ponto de NIHSS)</td><td><strong>OR = ${orPerUnit.toFixed(3)}</strong></td></tr>
+                    <tr><td>Odds Ratio (por 1 DP de NIHSS = ${sdX.toFixed(1)} pts)</td><td>OR = ${orPerSD.toFixed(3)}</td></tr>
+                    <tr><td>Coeficiente &beta; logístico</td><td>${logReg.beta[1].toFixed(4)}</td></tr>
+                    <tr><td>Pseudo R&sup2; (McFadden)</td><td>${logReg.pseudoR2.toFixed(3)}</td></tr>
+                </table>
+            `;
+        }
+    } else {
+        logisticaHtml = `<hr><p class="text-muted small"><em>Regressão Logística para internação prolongada (&gt; 7 dias): Requer mínimo de 2 casos em cada grupo (atualmente: &gt;7d = ${nProlongado}, &le;7d = ${nCurto}).</em></p>`;
+    }
+
+    if (reg) {
+        const xMin = Stats.min(x), xMax = Stats.max(x);
+        createChart('chartRegInternNIHSS', {
+            type: 'scatter',
+            data: {
+                datasets: [
+                    {
+                        label: 'Pacientes',
+                        data: x.map((xi, i) => ({ x: xi, y: y[i] })),
+                        backgroundColor: '#16a085',
+                        pointRadius: 5
+                    },
+                    {
+                        label: `Reta (Dias = ${reg.slope.toFixed(2)} &times; NIHSS + ${reg.intercept.toFixed(1)})`,
+                        data: [{ x: xMin, y: reg.slope * xMin + reg.intercept }, { x: xMax, y: reg.slope * xMax + reg.intercept }],
+                        type: 'line',
+                        borderColor: '#c0392b',
+                        borderWidth: 2,
+                        pointRadius: 0,
+                        fill: false
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: { title: { display: true, text: 'NIHSS Admissão (Gravidade)' }, beginAtZero: true },
+                    y: { title: { display: true, text: 'Dias de Internamento' }, beginAtZero: true }
+                },
+                plugins: { legend: { position: 'bottom' } }
+            }
+        });
+
+        div.innerHTML = `
+            <h6><i class="bi bi-calendar3 me-2"></i>Regressão Linear: NIHSS Admissão vs Dias de Internamento</h6>
+            <table class="table table-sm">
+                <tr><td>N de pacientes</td><td><strong>${reg.n}</strong></td></tr>
+                <tr><td>Coeficiente de inclinação (&beta;)</td><td><strong>+${reg.slope.toFixed(3)} dias/ponto NIHSS</strong></td></tr>
+                <tr><td>Correlação de Pearson (<em>r</em>)</td><td>${reg.r.toFixed(4)}</td></tr>
+                <tr><td>Coeficiente de Determinação (<em>R&sup2;</em>)</td><td>${(reg.r2 * 100).toFixed(2)}%</td></tr>
+                <tr><td>Significância (p-valor)</td><td>${pLabel(reg.pValue)}</td></tr>
+            </table>
+            <p class="small mb-0"><strong>Interpretação:</strong> ${reg.pValue < 0.05
+                ? `O escore NIHSS da admissão correlacionou-se positivamente com o tempo de internamento hospitalar (p = ${reg.pValue.toFixed(4)}). Cada ponto no NIHSS aumentou a estadia hospitalar em média ${reg.slope.toFixed(2)} dias.`
+                : `Não foi demonstrada relação linear estatisticamente significante entre o NIHSS da admissão e o tempo de internação (p = ${reg.pValue.toFixed(4)}).`
+            }</p>
+            ${logisticaHtml}
+        `;
+    }
+}
+
+// 3. Variação NIHSS vs Trombólise
+function analysis3(data) {
+    const div = document.getElementById('resultNIHSSTrombo');
+    const comTrombo = data.filter(p => p.trombolise === 'Sim' && p.deltaNihss !== null).map(p => p.deltaNihss);
+    const semTrombo = data.filter(p => p.trombolise === 'Não' && p.deltaNihss !== null).map(p => p.deltaNihss);
+
+    if (comTrombo.length < 2 || semTrombo.length < 2) {
+        div.innerHTML = '<p class="text-muted">Requer mínimo de 2 pacientes com trombólise e 2 sem trombólise com NIHSS de alta preenchido.</p>';
+        destroyChart('chartNIHSSTrombo');
+        return;
+    }
+
+    const test = Stats.tTestIndependent(comTrombo, semTrombo);
+    const mw = Stats.mannWhitneyU(comTrombo, semTrombo);
+
+    createChart('chartNIHSSTrombo', {
+        type: 'bar',
+        data: {
+            labels: ['Com Trombólise', 'Sem Trombólise'],
+            datasets: [{
+                label: 'Δ NIHSS Médio (Adm – Alta)',
+                data: [test.m1.toFixed(2), test.m2.toFixed(2)],
+                backgroundColor: ['#27ae60', '#e67e22'],
+                borderRadius: 4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: { y: { title: { display: true, text: 'Δ NIHSS Médio (Ganho Neurológico)' } } },
+            plugins: { legend: { display: false } }
+        }
+    });
+
+    div.innerHTML = `
+        <h6><i class="bi bi-calculator me-2"></i>Comparação: Evolução do NIHSS (&Delta; Adm &minus; Alta)</h6>
+        <table class="table table-sm">
+            <thead><tr><th>Grupo</th><th>N</th><th>Δ NIHSS Médio &plusmn; DP</th><th>Mediana</th></tr></thead>
+            <tbody>
+                <tr><td>Com Trombólise</td><td>${test.n1}</td><td class="text-success fw-bold">${test.m1.toFixed(2)} &plusmn; ${test.sd1.toFixed(2)}</td><td>${Stats.median(comTrombo).toFixed(1)}</td></tr>
+                <tr><td>Sem Trombólise</td><td>${test.n2}</td><td class="text-warning-emphasis fw-bold">${test.m2.toFixed(2)} &plusmn; ${test.sd2.toFixed(2)}</td><td>${Stats.median(semTrombo).toFixed(1)}</td></tr>
+            </tbody>
+        </table>
+        <p class="small mb-1"><strong>Teste t de Welch:</strong> t = ${test.tStat.toFixed(3)}, gl = ${test.df}, p = ${pLabel(test.pValue)}</p>
+        ${mw ? `<p class="small mb-1"><strong>Teste Mann-Whitney U:</strong> U = ${mw.U.toFixed(1)}, z = ${mw.z.toFixed(3)}, p = ${pLabel(mw.pValue)}</p>` : ''}
+        <p class="small mb-0"><strong>Interpretação:</strong> ${test.pValue < 0.05
+            ? `Diferença estatisticamente significante na melhora do NIHSS a favor do grupo com trombólise (p = ${test.pValue.toFixed(4)}).`
+            : `Não houve diferença estatisticamente significante na variação do NIHSS entre os grupos (p = ${test.pValue.toFixed(4)}).`
+        }</p>
+    `;
+}
+
+// 4. Fatores de Risco vs NIHSS Admissão (incluindo ETILISMO)
+function analysis4(data) {
+    const div = document.getElementById('resultFRvsNIHSS');
+    const frLabels = ['HAS', 'DM2', 'Dislipidemia', 'Tabagismo', 'Etilismo', 'Obesidade', 'Cardiopatia', 'AVC Prévio', 'Anticoag/Antiag', 'Anticoncepcional'];
+
+    const valid = data.filter(p => p.nihssAdm !== null);
+    if (valid.length < 3) {
+        div.innerHTML = '<p class="text-muted">Mínimo de 3 pacientes com NIHSS admissão registrado.</p>';
+        destroyChart('chartFRvsNIHSS');
+        return;
+    }
+
+    const results = [];
+    const chartLabels = [], chartWith = [], chartWithout = [];
+
+    frLabels.forEach(fr => {
+        const com = valid.filter(p => (p.fatoresRisco || []).includes(fr)).map(p => p.nihssAdm);
+        const sem = valid.filter(p => !(p.fatoresRisco || []).includes(fr)).map(p => p.nihssAdm);
+
+        if (com.length >= 2 && sem.length >= 2) {
+            const test = Stats.tTestIndependent(com, sem);
+            results.push({ fr, n1: com.length, n2: sem.length, m1: test.m1, m2: test.m2, sd1: test.sd1, sd2: test.sd2, pValue: test.pValue, tStat: test.tStat });
+            chartLabels.push(fr);
+            chartWith.push(test.m1.toFixed(2));
+            chartWithout.push(test.m2.toFixed(2));
+        }
+    });
+
+    if (!results.length) {
+        div.innerHTML = '<p class="text-muted">Amostra insuficiente de casos positivos e negativos para teste t dos fatores de risco.</p>';
+        destroyChart('chartFRvsNIHSS');
+        return;
+    }
+
+    createChart('chartFRvsNIHSS', {
+        type: 'bar',
+        data: {
+            labels: chartLabels,
+            datasets: [
+                { label: 'Presente (Média NIHSS)', data: chartWith, backgroundColor: '#c0392b', borderRadius: 4 },
+                { label: 'Ausente (Média NIHSS)', data: chartWithout, backgroundColor: '#2980b9', borderRadius: 4 }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: { y: { title: { display: true, text: 'NIHSS Admissão Médio' }, beginAtZero: true } },
+            plugins: { legend: { position: 'bottom' } }
+        }
+    });
+
+    div.innerHTML = `
+        <h6><i class="bi bi-clipboard2-pulse me-2"></i>Impacto dos Fatores de Risco no NIHSS Admissional (Teste t)</h6>
+        <table class="table table-sm table-striped">
+            <thead><tr><th>Fator</th><th>Presente (n)</th><th>Média &plusmn; DP</th><th>Ausente (n)</th><th>Média &plusmn; DP</th><th>p-valor</th></tr></thead>
+            <tbody>${results.map(r => `
+                <tr class="${r.fr === 'Etilismo' ? 'table-info fw-semibold' : ''}">
+                    <td>${r.fr === 'Etilismo' ? '<i class="bi bi-cup-straw me-1"></i><strong>Etilismo</strong>' : r.fr}</td>
+                    <td>${r.n1}</td><td>${r.m1.toFixed(2)} &plusmn; ${r.sd1.toFixed(2)}</td>
+                    <td>${r.n2}</td><td>${r.m2.toFixed(2)} &plusmn; ${r.sd2.toFixed(2)}</td>
+                    <td>${pLabel(r.pValue)}</td>
+                </tr>
+            `).join('')}</tbody>
+        </table>
+    `;
+}
+
+// 5. Variação mRS vs Fatores de Risco (incluindo ETILISMO)
+function analysis5(data) {
+    const div = document.getElementById('resultMRSvsFR');
+    const frLabels = ['HAS', 'DM2', 'Dislipidemia', 'Tabagismo', 'Etilismo', 'Obesidade', 'Cardiopatia', 'AVC Prévio', 'Anticoag/Antiag', 'Anticoncepcional'];
+
+    const valid = data.filter(p => p.deltaMrs !== null);
+    if (valid.length < 3) {
+        div.innerHTML = '<p class="text-muted">Mínimo de 3 pacientes com mRS de admissão e alta registrados.</p>';
+        destroyChart('chartMRSvsFR');
+        return;
+    }
+
+    const results = [];
+    const chartLabels = [], chartWith = [], chartWithout = [];
+
+    frLabels.forEach(fr => {
+        const com = valid.filter(p => (p.fatoresRisco || []).includes(fr)).map(p => p.deltaMrs);
+        const sem = valid.filter(p => !(p.fatoresRisco || []).includes(fr)).map(p => p.deltaMrs);
+
+        if (com.length >= 2 && sem.length >= 2) {
+            const test = Stats.tTestIndependent(com, sem);
+            results.push({ fr, n1: com.length, n2: sem.length, m1: test.m1, m2: test.m2, sd1: test.sd1, sd2: test.sd2, pValue: test.pValue, tStat: test.tStat });
+            chartLabels.push(fr);
+            chartWith.push(test.m1.toFixed(2));
+            chartWithout.push(test.m2.toFixed(2));
+        }
+    });
+
+    if (!results.length) {
+        div.innerHTML = '<p class="text-muted">Amostra insuficiente para comparação estatística de Δ mRS.</p>';
+        destroyChart('chartMRSvsFR');
+        return;
+    }
+
+    createChart('chartMRSvsFR', {
+        type: 'bar',
+        data: {
+            labels: chartLabels,
+            datasets: [
+                { label: 'Com o Fator (Δ mRS médio)', data: chartWith, backgroundColor: '#c0392b', borderRadius: 4 },
+                { label: 'Sem o Fator (Δ mRS médio)', data: chartWithout, backgroundColor: '#27ae60', borderRadius: 4 }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: { y: { title: { display: true, text: 'Δ mRS Médio (Ganho Funcional)' } } },
+            plugins: { legend: { position: 'bottom' } }
+        }
+    });
+
+    div.innerHTML = `
+        <h6><i class="bi bi-person-wheelchair me-2"></i>Recuperação Funcional (&Delta; mRS) por Fator de Risco</h6>
+        <table class="table table-sm table-striped">
+            <thead><tr><th>Fator</th><th>Presente (n)</th><th>Δ mRS &plusmn; DP</th><th>Ausente (n)</th><th>Δ mRS &plusmn; DP</th><th>p-valor</th></tr></thead>
+            <tbody>${results.map(r => `
+                <tr class="${r.fr === 'Etilismo' ? 'table-info fw-semibold' : ''}">
+                    <td>${r.fr === 'Etilismo' ? '<i class="bi bi-cup-straw me-1"></i><strong>Etilismo</strong>' : r.fr}</td>
+                    <td>${r.n1}</td><td>${r.m1.toFixed(2)} &plusmn; ${r.sd1.toFixed(2)}</td>
+                    <td>${r.n2}</td><td>${r.m2.toFixed(2)} &plusmn; ${r.sd2.toFixed(2)}</td>
+                    <td>${pLabel(r.pValue)}</td>
+                </tr>
+            `).join('')}</tbody>
+        </table>
+    `;
+}
+
+// 6. Variação mRS vs Trombólise (Global)
+function analysis6(data) {
+    const div = document.getElementById('resultMRSTrombo');
+    const comTrombo = data.filter(p => p.trombolise === 'Sim' && p.deltaMrs !== null).map(p => p.deltaMrs);
+    const semTrombo = data.filter(p => p.trombolise === 'Não' && p.deltaMrs !== null).map(p => p.deltaMrs);
+
+    if (comTrombo.length < 2 || semTrombo.length < 2) {
+        div.innerHTML = '<p class="text-muted">Requer no mínimo 2 pacientes por grupo com mRS admissão e alta registrados.</p>';
+        destroyChart('chartMRSTrombo');
+        return;
+    }
+
+    const test = Stats.tTestIndependent(comTrombo, semTrombo);
+    const mw = Stats.mannWhitneyU(comTrombo, semTrombo);
+
+    createChart('chartMRSTrombo', {
+        type: 'bar',
+        data: {
+            labels: ['Com Trombólise', 'Sem Trombólise'],
+            datasets: [{
+                label: 'Δ mRS Médio (Adm – Alta)',
+                data: [test.m1.toFixed(2), test.m2.toFixed(2)],
+                backgroundColor: ['#27ae60', '#e67e22'],
+                borderRadius: 4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: { y: { title: { display: true, text: 'Δ mRS (Ganho Funcional)' } } },
+            plugins: { legend: { display: false } }
+        }
+    });
+
+    div.innerHTML = `
+        <h6><i class="bi bi-trophy me-2"></i>Recuperação Funcional Global: Com vs Sem Trombólise</h6>
+        <table class="table table-sm">
+            <tr><td></td><td><strong>Com Trombólise</strong></td><td><strong>Sem Trombólise</strong></td></tr>
+            <tr><td>Tamanho amostral (N)</td><td>${test.n1}</td><td>${test.n2}</td></tr>
+            <tr><td>Média Δ mRS &plusmn; DP</td><td class="text-success fw-bold">${test.m1.toFixed(2)} &plusmn; ${test.sd1.toFixed(2)}</td><td class="text-warning-emphasis fw-bold">${test.m2.toFixed(2)} &plusmn; ${test.sd2.toFixed(2)}</td></tr>
+            <tr><td>Mediana Δ mRS</td><td>${Stats.median(comTrombo).toFixed(1)}</td><td>${Stats.median(semTrombo).toFixed(1)}</td></tr>
+        </table>
+        <p class="small mb-1"><strong>Teste t de Welch:</strong> t = ${test.tStat.toFixed(3)}, gl = ${test.df}, p = ${pLabel(test.pValue)}</p>
+        ${mw ? `<p class="small mb-1"><strong>Mann-Whitney U:</strong> U = ${mw.U.toFixed(1)}, z = ${mw.z.toFixed(3)}, p = ${pLabel(mw.pValue)}</p>` : ''}
+        <p class="small mb-0"><strong>Interpretação:</strong> ${test.pValue < 0.05
+            ? `Ganho funcional significativamente superior no grupo que realizou trombólise (p = ${test.pValue.toFixed(4)}).`
+            : `Sem diferença estatisticamente significante na variação do mRS global entre os grupos (p = ${test.pValue.toFixed(4)}).`
+        }</p>
+    `;
+}
+
+// 7. NOVO: Análise Estatística Estratificada: Δ mRS por TOAST
+function analysis7(data) {
+    const div = document.getElementById('resultToastEstratificado');
+    const toastCategories = [
+        'Aterosclerose de Grandes Artérias',
+        'Cardioembolismo',
+        'Oclusão de Pequenas Artérias',
+        'Outra Etiologia Determinada',
+        'Etiologia Indeterminada'
+    ];
+
+    const results = [];
+
+    toastCategories.forEach(cat => {
+        const com = data.filter(p => p.toast === cat && p.trombolise === 'Sim' && p.deltaMrs !== null).map(p => p.deltaMrs);
+        const sem = data.filter(p => p.toast === cat && p.trombolise === 'Não' && p.deltaMrs !== null).map(p => p.deltaMrs);
+
+        if (com.length >= 2 && sem.length >= 2) {
+            const test = Stats.tTestIndependent(com, sem);
+            const mw = Stats.mannWhitneyU(com, sem);
+            results.push({
+                toast: cat,
+                n1: com.length,
+                n2: sem.length,
+                m1: test.m1,
+                m2: test.m2,
+                sd1: test.sd1,
+                sd2: test.sd2,
+                tStat: test.tStat,
+                pValue: test.pValue,
+                mwP: mw ? mw.pValue : null
+            });
+        } else {
+            results.push({
+                toast: cat,
+                n1: com.length,
+                n2: sem.length,
+                m1: com.length ? Stats.mean(com) : null,
+                m2: sem.length ? Stats.mean(sem) : null,
+                sd1: com.length ? Stats.std(com) : null,
+                sd2: sem.length ? Stats.std(sem) : null,
+                tStat: null,
+                pValue: null,
+                mwP: null
+            });
+        }
+    });
+
+    div.innerHTML = `
+        <h6><i class="bi bi-diagram-3 me-2"></i>Estratificação Formal por Categoria TOAST — Testes Estatísticos de Hipótese</h6>
+        <p class="text-muted small">
+            Avaliação do efeito da trombólise na melhora do mRS (&Delta; mRS) dentro de cada etiologia TOAST individualmente. Permite identificar subtipos etiológicos em jovens com resposta preferencial ao trombolítico.
+        </p>
+        <table class="table table-sm table-bordered">
+            <thead class="table-light">
+                <tr>
+                    <th>Subtipo TOAST</th>
+                    <th class="text-center">Com Trombólise (n)</th>
+                    <th class="text-center">Δ mRS (Média &plusmn; DP)</th>
+                    <th class="text-center">Sem Trombólise (n)</th>
+                    <th class="text-center">Δ mRS (Média &plusmn; DP)</th>
+                    <th class="text-center">Teste t (p-valor)</th>
+                    <th class="text-center">Mann-Whitney (p-valor)</th>
+                    <th>Conclusão Clínica Preliminar</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${results.map(r => {
+                    let conclusao = '';
+                    if (r.pValue !== null) {
+                        conclusao = r.pValue < 0.05
+                            ? `<span class="badge bg-success">Superioridade Significante</span>`
+                            : `<span class="badge bg-secondary">Sem diferença significante</span>`;
+                    } else {
+                        conclusao = `<span class="badge bg-light text-muted border">Amostra insuficiente (&lt; 2 por grupo)</span>`;
+                    }
+
+                    return `
+                        <tr>
+                            <td><strong>${r.toast}</strong></td>
+                            <td class="text-center">${r.n1}</td>
+                            <td class="text-center">${r.m1 !== null ? `${r.m1.toFixed(2)} &plusmn; ${r.sd1.toFixed(2)}` : '—'}</td>
+                            <td class="text-center">${r.n2}</td>
+                            <td class="text-center">${r.m2 !== null ? `${r.m2.toFixed(2)} &plusmn; ${r.sd2.toFixed(2)}` : '—'}</td>
+                            <td class="text-center">${pLabel(r.pValue)}</td>
+                            <td class="text-center">${pLabel(r.mwP)}</td>
+                            <td>${conclusao}</td>
+                        </tr>
+                    `;
+                }).join('')}
+            </tbody>
+        </table>
+    `;
+}
+
+// 8. Regressão Logística Multivariada: Preditores de Óbito (incluindo ETILISMO e INTERNAÇÃO)
+function analysis8(data) {
+    const div = document.getElementById('resultLogisticaObito');
+    const valid = data.filter(p => p.idade !== null && p.nihssAdm !== null);
+
+    if (valid.length < 8) {
+        div.innerHTML = '<p class="text-muted">Mínimo de 8 pacientes com dados clínicos completos para modelagem logística.</p>';
+        return;
+    }
+
+    const obitos = valid.filter(p => p.obito === 'Sim').length;
+    const sobrevv = valid.filter(p => p.obito === 'Não').length;
+
+    if (obitos < 2 || sobrevv < 2) {
+        div.innerHTML = `<p class="text-muted">A regressão logística multivariada requer a ocorrência de pelo menos 2 óbitos e 2 altas na amostra (atualmente: ${obitos} óbitos e ${sobrevv} sobreviventes).</p>`;
+        return;
+    }
+
+    const featureNames = [
+        'Idade',
+        'NIHSS Admissão',
+        'Dias de Internamento',
+        'HAS',
+        'DM2',
+        'Tabagismo',
+        'Etilismo',
+        'Cardiopatia',
+        'Trombólise Realizada'
+    ];
+
+    const X = valid.map(p => [
+        p.idade,
+        p.nihssAdm,
+        p.diasInternamento !== null ? p.diasInternamento : 5,
+        (p.fatoresRisco || []).includes('HAS') ? 1 : 0,
+        (p.fatoresRisco || []).includes('DM2') ? 1 : 0,
+        (p.fatoresRisco || []).includes('Tabagismo') ? 1 : 0,
+        (p.fatoresRisco || []).includes('Etilismo') ? 1 : 0,
+        (p.fatoresRisco || []).includes('Cardiopatia') ? 1 : 0,
+        p.trombolise === 'Sim' ? 1 : 0
+    ]);
+    const y = valid.map(p => p.obito === 'Sim' ? 1 : 0);
+
+    // Padronização Z-score das contínuas
+    const means = [0, 1, 2].map(col => Stats.mean(X.map(r => r[col])));
+    const sds = [0, 1, 2].map(col => Stats.std(X.map(r => r[col])) || 1);
+
+    const Xnorm = X.map(r => [
+        (r[0] - means[0]) / sds[0],
+        (r[1] - means[1]) / sds[1],
+        (r[2] - means[2]) / sds[2],
+        ...r.slice(3)
+    ]);
+
+    const result = Stats.logisticRegression(Xnorm, y, 2000, 0.05);
+    if (!result) {
+        div.innerHTML = '<p class="text-muted">Não houve convergência na estimação logística.</p>';
+        return;
+    }
+
+    div.innerHTML = `
+        <h6><i class="bi bi-shield-x me-2"></i>Modelo de Regressão Logística Multivariada — Preditores de Mortalidade Hospitalar</h6>
+        <p class="text-muted small">
+            As variáveis contínuas (Idade, NIHSS e Dias de Internamento) foram padronizadas. Os Odds Ratios (OR) para essas variáveis expressam o aumento do risco de óbito por 1 Desvio-Padrão adicional (DP Idade = ${sds[0].toFixed(1)}a; DP NIHSS = ${sds[1].toFixed(1)}pts; DP Internamento = ${sds[2].toFixed(1)}d).
+        </p>
+        <table class="table table-sm table-striped">
+            <thead>
+                <tr>
+                    <th>Variável Preditora</th>
+                    <th>Coeficiente &beta;</th>
+                    <th>Odds Ratio (OR)</th>
+                    <th>Efeito na Probabilidade de Óbito</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr><td><em>Intercepto (&beta;<sub>0</sub>)</em></td><td>${result.beta[0].toFixed(4)}</td><td>—</td><td>—</td></tr>
+                ${featureNames.map((name, i) => {
+                    const or = result.oddsRatios[i];
+                    const beta = result.beta[i + 1];
+                    let badge = '';
+                    if (or > 1.25) badge = '<span class="badge bg-danger">Aumento de Risco</span>';
+                    else if (or < 0.8) badge = '<span class="badge bg-success">Fator Protetor</span>';
+                    else badge = '<span class="badge bg-secondary">Efeito Neutro</span>';
+
+                    return `
+                        <tr class="${name === 'Etilismo' ? 'table-info fw-semibold' : ''}">
+                            <td>${name === 'Etilismo' ? '<i class="bi bi-cup-straw me-1"></i><strong>Etilismo</strong>' : name}</td>
+                            <td>${beta.toFixed(4)}</td>
+                            <td><strong>${or.toFixed(3)}</strong></td>
+                            <td>${badge}</td>
+                        </tr>
+                    `;
+                }).join('')}
+            </tbody>
+        </table>
+        <div class="row small mt-2">
+            <div class="col-md-6"><strong>Pseudo R&sup2; de McFadden:</strong> ${result.pseudoR2.toFixed(4)}</div>
+            <div class="col-md-6 text-md-end"><strong>Amostra (N):</strong> ${result.n} (${obitos} óbitos, ${sobrevv} altas)</div>
+        </div>
+        <div class="alert alert-light border mt-3 small mb-0">
+            <i class="bi bi-info-circle me-1"></i>
+            <strong>Orientação Metodológica:</strong> Esta modelagem logística exploratória serve para triagem e predição rápida. Para artigos finais e teses, utilize os dados exportados via CSV no pacote <code>stats::glm()</code> do <strong>R</strong> ou no módulo de Regressão Binária do <strong>SPSS</strong> para computação de Intervalos de Confiança a 95% exatos (Wald) e Teste de Hosmer-Lemeshow.
+        </div>
+    `;
+}
+
+// ================================================================
+// EXPORTAÇÃO E IMPORTAÇÃO DE DADOS
+// ================================================================
+document.getElementById('btnExportCSV').addEventListener('click', function () {
+    const data = DataManager.getAll();
+    if (!data.length) {
+        showToast('Aviso', 'Não há dados cadastrados para exportação.', 'warning');
+        return;
+    }
+
+    const headers = [
+        'Matrícula', 'Sexo', 'Idade', 'Data Admissão', 'Data Alta', 'Dias de Internamento',
+        'NIHSS Admissão', 'NIHSS Alta', 'Delta NIHSS',
+        'mRS Prévio', 'mRS Admissão', 'mRS Alta', 'Delta mRS',
+        'Tempo Sintomas Atendimento (min)', 'Tempo Admissão TC Crânio (min)',
+        'Território Arterial', 'BAMFORD', 'TOAST',
+        'HAS', 'DM2', 'Dislipidemia', 'Tabagismo', 'Etilismo', 'Obesidade', 'Cardiopatia',
+        'AVC Prévio', 'Anticoag/Antiag', 'Anticoncepcional',
+        'Trombólise Realizada', 'Delta T (horas)', 'Tempo Porta Agulha (min)',
+        'Transformação Hemorrágica', 'TH Sintomática', 'Óbito Hospitalar'
+    ];
+
+    const frLabels = ['HAS', 'DM2', 'Dislipidemia', 'Tabagismo', 'Etilismo', 'Obesidade', 'Cardiopatia', 'AVC Prévio', 'Anticoag/Antiag', 'Anticoncepcional'];
+
+    const rows = data.map(p => [
+        p.matricula,
+        p.sexo,
+        p.idade,
+        p.dataAdmissao || '',
+        p.dataAlta || '',
+        p.diasInternamento !== null ? p.diasInternamento : '',
+        p.nihssAdm !== null ? p.nihssAdm : '',
+        p.nihssAlta !== null ? p.nihssAlta : '',
+        p.deltaNihss !== null ? p.deltaNihss : '',
+        p.mrsPrevio !== null ? p.mrsPrevio : '',
+        p.mrsAdm !== null ? p.mrsAdm : '',
+        p.mrsAlta !== null ? p.mrsAlta : '',
+        p.deltaMrs !== null ? p.deltaMrs : '',
+        p.tempoSintomasAtend !== null ? p.tempoSintomasAtend : '',
+        p.tempoAdmTC !== null ? p.tempoAdmTC : '',
+        p.territorio,
+        p.bamford,
+        p.toast,
+        ...frLabels.map(fr => (p.fatoresRisco || []).includes(fr) ? 'Sim' : 'Não'),
+        p.trombolise,
+        p.deltaT !== null ? p.deltaT : '',
+        p.portaAgulha !== null ? p.portaAgulha : '',
+        p.transfHemorragica || 'Não',
+        p.transfHemorragicaSintomatica || 'Não',
+        p.obito
+    ]);
+
+    // BOM para o Excel abrir em UTF-8 com acentos corretos
+    let csv = '\uFEFF' + headers.map(h => `"${h}"`).join(';') + '\r\n';
+    rows.forEach(r => {
+        csv += r.map(v => `"${(v !== null && v !== undefined ? v : '').toString().replace(/"/g, '""')}"`).join(';') + '\r\n';
+    });
+
+    downloadBlob(csv, `avc_jovens_pesquisa_${new Date().toISOString().slice(0, 10)}.csv`, 'text/csv;charset=utf-8');
+    showToast('Exportação Concluída', `${data.length} pacientes exportados com sucesso em formato CSV.`, 'success');
+});
+
+document.getElementById('btnExportJSON').addEventListener('click', function () {
+    const data = DataManager.getAll();
+    if (!data.length) {
+        showToast('Aviso', 'Não há dados cadastrados para exportação.', 'warning');
+        return;
+    }
+    const json = JSON.stringify(data, null, 2);
+    downloadBlob(json, `avc_backup_pesquisa_${new Date().toISOString().slice(0, 10)}.json`, 'application/json');
+    showToast('Backup Concluído', 'Arquivo JSON de backup salvo.', 'success');
+});
+
+document.getElementById('btnImport').addEventListener('click', function () {
+    const file = document.getElementById('importFile').files[0];
+    if (!file) {
+        showToast('Arquivo Obrigatório', 'Selecione um arquivo de backup (.json).', 'warning');
+        return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = function (e) {
+        try {
+            const parsed = JSON.parse(e.target.result);
+            if (!Array.isArray(parsed)) throw new Error('O arquivo não contém uma lista de pacientes válida.');
+
+            if (!confirm(`Deseja importar ${parsed.length} pacientes? Isso substituirá a base de dados atual deste navegador.`)) {
+                return;
+            }
+
+            const normalized = parsed.map(p => DataManager.normalizePatient(p));
+            DataManager.save(normalized);
+            showToast('Importação Concluída', `${normalized.length} pacientes importados com sucesso!`, 'success');
+            document.getElementById('importFile').value = '';
+            refreshAll();
+        } catch (err) {
+            showToast('Erro de Importação', 'Arquivo JSON inválido: ' + err.message, 'danger');
+        }
+    };
+    reader.readAsText(file);
+});
+
+document.getElementById('btnPrint').addEventListener('click', () => window.print());
+
+function downloadBlob(content, filename, mimeType) {
+    const blob = new Blob([content], { type: mimeType });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+}
+
+// ================================================================
+// SISTEMA DE NOTIFICAÇÕES (TOAST)
+// ================================================================
+function showToast(title, msg, type = 'success') {
+    const toastEl = document.getElementById('toastNotif');
+    const toastIcon = document.getElementById('toastIcon');
+    const toastTitle = document.getElementById('toastTitle');
+    const toastMsg = document.getElementById('toastMsg');
+
+    toastTitle.textContent = title;
+    toastMsg.textContent = msg;
+
+    let bgClass = 'bg-success';
+    let iconClass = 'bi-check-circle-fill';
+
+    if (type === 'danger') {
+        bgClass = 'bg-danger';
+        iconClass = 'bi-exclamation-octagon-fill';
+    } else if (type === 'warning') {
+        bgClass = 'bg-warning text-dark';
+        iconClass = 'bi-exclamation-triangle-fill';
+    } else if (type === 'info') {
+        bgClass = 'bg-info text-dark';
+        iconClass = 'bi-info-circle-fill';
+    }
+
+    toastEl.className = `toast align-items-center border-0 ${bgClass}`;
+    toastIcon.className = `bi ${iconClass} me-2 fs-5`;
+
+    const toast = new bootstrap.Toast(toastEl, { delay: 4000 });
+    toast.show();
+}
+
+// ================================================================
+// ATUALIZAÇÃO GERAL E SINCRONIZAÇÃO DE ABAS
+// ================================================================
+function refreshAll() {
+    DataManager.updateCount();
+    renderTable();
+    renderEpidemiology();
+    renderAnalysis();
+}
+
+document.querySelectorAll('[data-bs-toggle="tab"]').forEach(tab => {
+    tab.addEventListener('shown.bs.tab', function () {
+        const target = this.getAttribute('href');
+        if (target === '#tabEpidemiologia') renderEpidemiology();
+        else if (target === '#tabAnalise') renderAnalysis();
+        else if (target === '#tabDados') renderTable();
+    });
+});
+
+document.addEventListener('DOMContentLoaded', () => {
+    refreshAll();
+});
+</script>
+</body>
+</html>
